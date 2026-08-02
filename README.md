@@ -6,13 +6,36 @@
 
 [Learn more about this workspace setup and its capabilities](https://nx.dev/nx-api/node?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects) or run `npx nx graph` to visually explore what was created. Now, let's get you up to speed!
 
+## Projects
+
+| Project              | Path      | Dev port | What it is                              |
+| -------------------- | --------- | -------- | --------------------------------------- |
+| `@squadup.in/api`    | `apps/api`| 8080     | NestJS API                              |
+| `@squadup.in/web`    | `apps/web`| 3001     | Next.js customer app                    |
+| `@squadup.in/ops`    | `apps/ops`| 3002     | Next.js operations console              |
+| `@squadup.in/ui`     | `libs/ui` | —        | Shared design system used by web + ops  |
+
+Ports match `WEB_PORT` / `OPS_PORT` / `API_PORT` in `.env.local`, so web and ops
+can run side by side.
+
+Anything both apps render belongs in `libs/ui` — ESLint's
+`@nx/enforce-module-boundaries` blocks app-to-app imports, so sharing through
+the library is the only route.
+
 ## Run tasks
 
-To run the dev server for your app, use:
+Every app uses the same target names:
 
 ```sh
-npx nx serve api
+npx nx serve @squadup.in/web     # dev server with HMR (also picks up libs/ui edits)
+npx nx build @squadup.in/web     # production build
+npx nx start @squadup.in/web     # serve the production build
+npx nx typecheck @squadup.in/web
+npx nx lint @squadup.in/web
+npx nx test @squadup.in/web
 ```
+
+Run one target everywhere with `npx nx run-many -t lint test typecheck`.
 
 To create a production bundle:
 

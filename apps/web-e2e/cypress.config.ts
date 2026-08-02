@@ -5,11 +5,11 @@ module.exports = defineConfig({
     ...nxE2EPreset(__filename, {
       cypressDir: 'src',
       webServerCommands: {
-        default: 'npx nx run @squadup.in/web:dev',
+        default: 'npx nx run @squadup.in/web:serve',
       },
       ciWebServerCommand: 'npx nx run @squadup.in/web:start',
-      ciBaseUrl: 'http://localhost:3000',
+      ciBaseUrl: 'http://localhost:3001',
     }),
-    baseUrl: 'http://127.0.0.1:3000',
+    baseUrl: 'http://127.0.0.1:3001',
   },
 });
