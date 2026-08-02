@@ -16,7 +16,9 @@ node_modules
 *.launch
 .settings/
 *.sublime-workspace
-
+.env.local
+minio_data
+compose.dev.yml
 # IDE - VSCode
 .vscode/*
 !.vscode/settings.json
