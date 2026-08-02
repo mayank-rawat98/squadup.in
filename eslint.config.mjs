@@ -26,10 +26,25 @@ export default [
                         "^.*/eslint(\\.base)?\\.config\\.[cm]?[jt]s$"
                     ],
                     depConstraints: [
+                        // Apps are leaves: they compose shared libs, never each
+                        // other. Anything web and ops both need belongs in libs.
                         {
-                            sourceTag: "*",
+                            sourceTag: "type:app",
                             onlyDependOnLibsWithTags: [
-                                "*"
+                                "type:lib"
+                            ]
+                        },
+                        {
+                            sourceTag: "type:lib",
+                            onlyDependOnLibsWithTags: [
+                                "type:lib"
+                            ]
+                        },
+                        {
+                            sourceTag: "type:e2e",
+                            onlyDependOnLibsWithTags: [
+                                "type:app",
+                                "type:lib"
                             ]
                         }
                     ]

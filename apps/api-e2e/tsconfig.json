@@ -4,10 +4,11 @@
     "outDir": "out-tsc/@squadup.in/api-e2e",
     "esModuleInterop": true,
     "noUnusedLocals": false,
-    "noImplicitAny": false
+    "noImplicitAny": false,
+    "types": ["jest", "node"]
   },
   "include": [
-    "jest.config.ts",
+    "jest.config.cts",
     "src/**/*.ts"
   ],
   "references": []

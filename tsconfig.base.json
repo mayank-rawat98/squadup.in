@@ -16,6 +16,9 @@
     "skipLibCheck": true,
     "strict": true,
     "target": "es2022",
-    "customConditions": ["@squadup.in/source"]
+    "customConditions": ["@squadup.in/source"],
+    "paths": {
+      "@squadup.in/ui": ["./libs/ui/src/index.ts"]
+    }
   }
 }

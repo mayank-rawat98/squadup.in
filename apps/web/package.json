@@ -2,7 +2,53 @@
   "name": "@squadup.in/web",
   "version": "0.0.1",
   "private": true,
+  "nx": {
+    "tags": ["type:app", "scope:web"],
+    "targets": {
+      "serve": {
+        "options": {
+          "cwd": "apps/web",
+          "command": "next dev --port 3001"
+        }
+      },
+      "start": {
+        "options": {
+          "cwd": "apps/web",
+          "command": "next start --port 3001"
+        }
+      },
+      "serve-static": {
+        "options": {
+          "cwd": "apps/web",
+          "command": "next start --port 3001"
+        }
+      },
+      "typecheck": {
+        "cache": true,
+        "dependsOn": ["^build"],
+        "inputs": [
+          "default",
+          "^default",
+          "{workspaceRoot}/tsconfig.base.json",
+          {
+            "dependentTasksOutputFiles": "**/*.{d.ts,d.cts,d.mts,tsbuildinfo}",
+            "transitive": true
+          },
+          {
+            "externalDependencies": ["typescript"]
+          }
+        ],
+        "outputs": [],
+        "executor": "nx:run-commands",
+        "options": {
+          "cwd": "apps/web",
+          "command": "tsc --noEmit -p tsconfig.json"
+        }
+      }
+    }
+  },
   "dependencies": {
+    "@squadup.in/ui": "^0.0.1",
     "next": "~16.1.6",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
