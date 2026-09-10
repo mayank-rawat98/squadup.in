@@ -17,9 +17,14 @@ import {
 
 /*
  * Aspirational rather than commercial. The brief bans e-commerce framing here:
- * no cart, no price tags, no discounts. Merchandise is earned with Squad
- * Points and never bought, which is what gives it meaning, so the points block
- * sits directly underneath the four categories rather than in its own section.
+ * no cart, no price tags, no discounts. Physical rewards are earned with Squad
+ * Points and never bought, which is what gives them meaning, so the points
+ * block sits directly under the four categories rather than in its own section.
+ *
+ * The rewards category leads on 3D-printed pieces. Hoodies and stickers are
+ * handed out at every hackathon, so they cannot carry the signal alone; a
+ * printed trophy made for one squad has no other source. The standard merch
+ * is still there, a tier below.
  *
  * Prize amounts are described rather than quoted. The specific figures live on
  * each arena, where they are real, and repeating them here would turn the

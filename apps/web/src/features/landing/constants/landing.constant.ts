@@ -4,6 +4,7 @@ import {
   BadgeCheck,
   Banknote,
   Blocks,
+  Boxes,
   Brain,
   Briefcase,
   Code,
@@ -20,7 +21,6 @@ import {
   PanelsTopLeft,
   Rocket,
   Send,
-  Shirt,
   Target,
   TrendingUp,
   Trophy,
@@ -102,7 +102,7 @@ export const ARENAS: Arena[] = [
     teamSize: 'Solo',
     duration: '60 Minutes',
     difficulty: 'intermediate',
-    prize: 'SquadUp Merchandise',
+    prize: '3D-Printed Trophy',
     status: 'registration-open',
   },
   {
@@ -453,11 +453,23 @@ export const REWARD_CATEGORIES: RewardCategory[] = [
   },
   {
     id: 'merch',
-    icon: Shirt,
-    title: 'Wear Your Achievement',
+    icon: Boxes,
+    title: 'Earn It. Never Buy It.',
+    /*
+     * 3D-printed pieces lead here on purpose. Hoodies and stickers are given
+     * away at every hackathon, so they cannot carry the "I earned this"
+     * signal on their own. A printed trophy cut for one squad and one win
+     * can, because there is nowhere to buy one. The classic merch stays, one
+     * tier down.
+     */
     description:
-      'Redeem exclusive merchandise with Squad Points earned through competing. Never purchasable directly.',
-    examples: ['Hoodies', 'T-shirts', 'Stickers', 'Laptop sleeves'],
+      'Squad Points unlock rewards that are not for sale. The centrepiece is 3D printed for your squad and your win, with the usual merch alongside it.',
+    examples: [
+      '3D-printed arena trophies',
+      'Custom squad keycaps',
+      'Printed desk pieces',
+      'Hoodies, tees and stickers',
+    ],
     accent: 'react',
   },
   {
@@ -480,7 +492,7 @@ export const REWARD_CATEGORIES: RewardCategory[] = [
 export const SQUAD_POINTS_COPY = {
   title: 'Squad Points',
   description:
-    'The long-term progression system. Points accumulate through everything you do on the platform, and they are the only way to unlock the merchandise catalogue.',
+    'The long-term progression system. Points accumulate through everything you do on the platform, and they are the only way to reach the rewards catalogue.',
   earn: [
     'Participating in arenas',
     'Completing projects',
@@ -490,7 +502,8 @@ export const SQUAD_POINTS_COPY = {
     'Maintaining streaks',
   ],
   unlock: [
-    'Merchandise',
+    '3D-printed rewards',
+    'Classic merch',
     'Profile customisations',
     'Exclusive arenas',
     'Community perks',
@@ -656,13 +669,15 @@ export const FAQS: FaqEntry[] = [
     question: 'What can I win?',
     answer: [
       'It depends on the competition. Every completed project also strengthens your developer profile, whether or not you place.',
+      'Physical rewards are earned with Squad Points and never sold. Most of the catalogue is 3D printed for the squad that won it, so there is nowhere else to get one.',
     ],
     points: [
       'Cash prizes',
       'Squad Points',
       'Achievement badges',
       'Public recognition',
-      'Exclusive merchandise',
+      '3D-printed rewards',
+      'Classic merch',
     ],
   },
   {
