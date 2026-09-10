@@ -1,0 +1,55 @@
+import type { LucideIcon } from 'lucide-react';
+
+/*
+ * Shapes for the landing page's content. Everything here is currently served
+ * from `constants/landing.constant.ts`, but the types are written to match
+ * what the arena endpoints will return, so swapping the source is a one-file
+ * change rather than a rewrite of every section.
+ */
+
+/** Keys of the five arena accent token pairs in the design system. */
+export type ArenaAccent = 'frontend' | 'backend' | 'devops' | 'react' | 'ai';
+
+export type ArenaDifficulty = 'beginner' | 'intermediate' | 'advanced';
+
+export type ArenaStatus =
+  | 'live'
+  | 'registration-open'
+  | 'starts-soon'
+  | 'coming-soon';
+
+export interface Arena {
+  id: string;
+  slug: string;
+  name: string;
+  /** One concise sentence. The doc is explicit that this stays a single line. */
+  description: string;
+  icon: LucideIcon;
+  accent: ArenaAccent;
+  /** "Solo", "Duo", "Team of 4". */
+  teamSize: string;
+  /** "60 Minutes", "3 Hours", "Weekend Challenge". */
+  duration: string;
+  difficulty: ArenaDifficulty;
+  /** "₹10,000", "SquadUp Merchandise", "XP Rewards". */
+  prize: string;
+  status: ArenaStatus;
+  /*
+   * Populated by the API, absent until then. The landing page renders the
+   * card without them rather than inventing figures — see the note at the top
+   * of landing.constant.ts.
+   */
+  participants?: number;
+  endsAt?: string;
+  startsAt?: string;
+}
+
+export interface NavItem {
+  label: string;
+  href: string;
+}
+
+export interface FooterColumn {
+  title: string;
+  links: Array<NavItem & { comingSoon?: boolean }>;
+}
