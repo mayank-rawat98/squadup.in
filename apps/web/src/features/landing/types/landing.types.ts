@@ -78,3 +78,54 @@ export interface SquadRole {
   role: string;
   accent: ArenaAccent;
 }
+
+/** A recognition badge a squad can earn in an arena. */
+export interface Achievement {
+  id: string;
+  icon: LucideIcon;
+  label: string;
+  accent: ArenaAccent;
+}
+
+/** A stage in the vertical growth journey. */
+export interface JourneyStage {
+  id: string;
+  icon: LucideIcon;
+  title: string;
+  description: string;
+  /** Short supporting points, rendered as a list. */
+  points?: string[];
+}
+
+/** One of the four reward columns. */
+export interface RewardCategory {
+  id: string;
+  icon: LucideIcon;
+  title: string;
+  description: string;
+  examples: string[];
+  accent: ArenaAccent;
+}
+
+/** One of the three developer stories in Join the Builders. */
+export interface BuilderStory {
+  id: string;
+  icon: LucideIcon;
+  title: string;
+  description: string;
+}
+
+/** A community a developer can join. */
+export interface CommunityGroup {
+  label: string;
+  accent: ArenaAccent;
+}
+
+export interface FaqEntry {
+  id: string;
+  question: string;
+  /** Paragraphs. Rendered in order. */
+  answer: string[];
+  /** Optional bullets shown under the answer. */
+  points?: string[];
+}

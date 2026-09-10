@@ -1,22 +1,43 @@
 import {
   Atom,
+  Award,
+  BadgeCheck,
+  Banknote,
+  Blocks,
   Brain,
+  Briefcase,
   Code,
   Code2,
+  Cog,
+  Compass,
   Container,
   Eye,
+  GitBranch,
+  Handshake,
+  Lightbulb,
+  Medal,
+  Palette,
   PanelsTopLeft,
   Rocket,
   Send,
+  Shirt,
   Target,
+  TrendingUp,
   Trophy,
   UserSearch,
   Users,
   UsersRound,
+  Zap,
 } from 'lucide-react';
 import type {
+  Achievement,
   Arena,
+  BuilderStory,
   BuildStep,
+  CommunityGroup,
+  FaqEntry,
+  JourneyStage,
+  RewardCategory,
   SquadRole,
   SquadStep,
 } from '../types/landing.types';
@@ -294,4 +315,401 @@ export const PHILOSOPHY_COPY = {
     'Modern software development is more than writing code. SquadUp rewards engineering thinking, collaboration, architecture, creativity and execution.',
     'AI can generate code. Only developers can design systems, make decisions, solve real problems and build products that matter.',
   ],
+} as const;
+
+/* -------------------------------------------------------------------------
+ * Section 4 — Hall of Champions
+ * ---------------------------------------------------------------------- */
+
+export const CHAMPIONS_COPY = {
+  title: 'Hall of Champions',
+  subtitle:
+    'Every great product deserves recognition. Discover the squads and developers building exceptional software inside SquadUp.',
+  /*
+   * No squads have competed yet, so this section ships its real layout around
+   * an empty state rather than inventing winners. The achievement categories
+   * below are genuine — they are awards we define, not results we are claiming.
+   */
+  emptyTitle: 'The first champions are yet to be crowned',
+  emptyBody:
+    'Squads, winning projects and arena titles appear here as soon as the first arenas close. Enter one and your squad could be the first.',
+  emptyCta: { label: 'Enter an arena', href: '/arenas' },
+} as const;
+
+export const ACHIEVEMENTS: Achievement[] = [
+  { id: 'champion', icon: Trophy, label: 'Arena Champion', accent: 'react' },
+  { id: 'deploy', icon: Zap, label: 'Fastest Deployment', accent: 'devops' },
+  { id: 'ui', icon: Palette, label: 'Best UI / UX', accent: 'frontend' },
+  {
+    id: 'architecture',
+    icon: Cog,
+    label: 'Best Architecture',
+    accent: 'backend',
+  },
+  {
+    id: 'collab',
+    icon: Handshake,
+    label: 'Best Collaboration',
+    accent: 'devops',
+  },
+  { id: 'innovation', icon: Lightbulb, label: 'Most Innovative', accent: 'ai' },
+];
+
+/* -------------------------------------------------------------------------
+ * Section 5 — Every Arena Makes You Better
+ * ---------------------------------------------------------------------- */
+
+export const JOURNEY_COPY = {
+  title: 'Every Arena Makes You Better',
+  subtitle:
+    'Whether you finish first or fiftieth, every challenge leaves you a stronger developer and a better teammate.',
+  statement:
+    'Every arena ends with something more valuable than a prize. You leave with a product, new teammates, and experience that stays with you long after the competition ends.',
+} as const;
+
+export const JOURNEY_STAGES: JourneyStage[] = [
+  {
+    id: 'build',
+    icon: Blocks,
+    title: 'Build Something Real',
+    description:
+      'Every arena ends with a working application. Not a solved question, not an uploaded PDF. A real product.',
+  },
+  {
+    id: 'portfolio',
+    icon: Briefcase,
+    title: 'Strengthen Your Portfolio',
+    description:
+      'Every completed challenge becomes part of your public developer profile.',
+    points: ['Projects', 'Technologies', 'Contributions', 'Team participation'],
+  },
+  {
+    id: 'recognition',
+    icon: Medal,
+    title: 'Earn Recognition',
+    description:
+      'Unlock badges, arena titles, featured projects and squad achievements. Recognition lasts longer than prize money.',
+  },
+  {
+    id: 'engineer',
+    icon: TrendingUp,
+    title: 'Improve as an Engineer',
+    description:
+      'The goal is to become a better engineer, not a better contestant.',
+    points: [
+      'Communication',
+      'Architecture',
+      'Debugging',
+      'Time management',
+      'Collaboration',
+    ],
+  },
+  {
+    id: 'opportunity',
+    icon: Compass,
+    title: 'Open New Opportunities',
+    description:
+      'Companies discover your work, developers invite you to squads, and your portfolio speaks for itself.',
+  },
+];
+
+/* -------------------------------------------------------------------------
+ * Section 6 — Rewards & Recognition
+ * ---------------------------------------------------------------------- */
+
+export const REWARDS_COPY = {
+  title: 'Build. Compete. Get Recognized.',
+  subtitle:
+    'Every project you build brings more than experience. Earn exclusive rewards, unlock achievements, and grow your reputation as a developer.',
+} as const;
+
+export const REWARD_CATEGORIES: RewardCategory[] = [
+  {
+    id: 'cash',
+    icon: Banknote,
+    title: 'Win Real Prizes',
+    description:
+      'Top-performing squads receive cash prizes for outstanding engineering, innovation and execution.',
+    examples: [
+      'Arena winner prizes',
+      'Championship prize pool',
+      'Sponsored rewards',
+    ],
+    accent: 'backend',
+  },
+  {
+    id: 'achievements',
+    icon: Award,
+    title: 'Earn Achievements',
+    description:
+      'Unlock badges that represent your journey as a builder. Achievements become part of your public profile.',
+    examples: [
+      'Arena Champion',
+      'Best UI',
+      'Fastest Deployment',
+      'Team Player',
+    ],
+    accent: 'frontend',
+  },
+  {
+    id: 'merch',
+    icon: Shirt,
+    title: 'Wear Your Achievement',
+    description:
+      'Redeem exclusive merchandise with Squad Points earned through competing. Never purchasable directly.',
+    examples: ['Hoodies', 'T-shirts', 'Stickers', 'Laptop sleeves'],
+    accent: 'react',
+  },
+  {
+    id: 'reputation',
+    icon: BadgeCheck,
+    title: 'Build Your Reputation',
+    description:
+      'Every competition strengthens your public developer profile and the story it tells.',
+    examples: [
+      'Projects built',
+      'Arenas completed',
+      'Squad history',
+      'Tech used',
+    ],
+    accent: 'ai',
+  },
+];
+
+/** The progression system that ties participation to the reward catalogue. */
+export const SQUAD_POINTS_COPY = {
+  title: 'Squad Points',
+  description:
+    'The long-term progression system. Points accumulate through everything you do on the platform, and they are the only way to unlock the merchandise catalogue.',
+  earn: [
+    'Participating in arenas',
+    'Completing projects',
+    'Winning competitions',
+    'Helping teammates',
+    'Contributing to the community',
+    'Maintaining streaks',
+  ],
+  unlock: [
+    'Merchandise',
+    'Profile customisations',
+    'Exclusive arenas',
+    'Community perks',
+    'Seasonal rewards',
+  ],
+} as const;
+
+/* -------------------------------------------------------------------------
+ * Section 7 — Join the Builders
+ * ---------------------------------------------------------------------- */
+
+export const BUILDERS_COPY = {
+  title: 'Find Your People. Build Your Future.',
+  subtitle:
+    'Every great product starts with a team. Connect with developers who share your passion, complement your skills, and are ready to build something meaningful.',
+} as const;
+
+export const BUILDER_STORIES: BuilderStory[] = [
+  {
+    id: 'meet',
+    icon: UserSearch,
+    title: 'Meet Developers Like You',
+    description:
+      'Browse developers by technology, interest, experience and availability. Whether you need a frontend specialist, a backend architect or an AI enthusiast, SquadUp helps you build a balanced team.',
+  },
+  {
+    id: 'beyond',
+    icon: GitBranch,
+    title: 'Projects Do Not End When Arenas Do',
+    description:
+      'The best ideas deserve more than a leaderboard. Keep collaborating after the competition, improve what you built, and turn a weekend project into a real product.',
+  },
+  {
+    id: 'together',
+    icon: Users,
+    title: 'One Squad. Many Arenas.',
+    description:
+      'Stay with your squad across competitions. Build trust, sharpen how you work together, and develop a shared engineering identity over time.',
+  },
+];
+
+export const COMMUNITY_GROUPS: CommunityGroup[] = [
+  { label: 'Frontend Builders', accent: 'frontend' },
+  { label: 'Backend Engineers', accent: 'backend' },
+  { label: 'DevOps Enthusiasts', accent: 'devops' },
+  { label: 'AI & ML Developers', accent: 'ai' },
+  { label: 'Open Source Contributors', accent: 'backend' },
+  { label: 'UI/UX Designers', accent: 'frontend' },
+  { label: 'Startup Builders', accent: 'react' },
+  { label: 'College Chapters', accent: 'devops' },
+];
+
+/*
+ * The signature idea of the section: a squad is a lasting identity, not a team
+ * that dissolves when the event ends.
+ */
+export const PERSISTENT_SQUADS_COPY = {
+  title: 'Persistent Squads',
+  description:
+    'A SquadUp squad has its own identity. It carries a name, a profile, a win history, the projects it has built and the badges it has earned. Your squad becomes your reputation.',
+  attributes: [
+    'Squad profile',
+    'Win history',
+    'Projects built',
+    'Technologies mastered',
+    'Achievement badges',
+    'Public reputation',
+  ],
+} as const;
+
+/* -------------------------------------------------------------------------
+ * Section 8 — Built on SquadUp
+ * ---------------------------------------------------------------------- */
+
+export const BUILT_ON_COPY = {
+  title: 'Built on SquadUp',
+  subtitle:
+    'Every arena creates more than winners. It creates products, friendships, and developers who keep building long after the competition ends.',
+  /*
+   * The brief is explicit here: do not invent testimonials. This section ships
+   * as a featured-projects showcase with nothing in it yet, and fills up with
+   * real work as arenas close. Three real projects beat ten invented quotes.
+   */
+  emptyTitle: 'The first projects are being built right now',
+  emptyBody:
+    'This is where finished work goes: the project, the squad that built it, the stack they chose and a link you can open. Real builds only, added as arenas close.',
+  emptyCta: { label: 'Start building', href: '/signup' },
+} as const;
+
+/* -------------------------------------------------------------------------
+ * Section 9 — The Future of Building
+ * ---------------------------------------------------------------------- */
+
+export const MANIFESTO_COPY = {
+  title: 'We Are Building the Future of Developer Collaboration',
+  subtitle:
+    'Software is not built by individuals racing against timers. It is built by teams solving real problems together. SquadUp exists to make that experience available to every developer.',
+  beliefs: [
+    'Great developers are not measured by how many problems they solve. They are measured by what they build.',
+    'The best engineering happens through discussion, collaboration, experimentation and iteration. Not in isolation.',
+    'AI can accelerate development. But curiosity, creativity, system design, communication and judgement will always belong to humans.',
+    'Every developer deserves a place where learning happens through building, not through memorising.',
+    'The best products begin with one idea, and one squad willing to build it.',
+  ],
+  closing: 'Build products. Build friendships. Build your future.',
+  closingSub: 'Welcome to SquadUp.',
+} as const;
+
+/* -------------------------------------------------------------------------
+ * Section 10 — Frequently Asked Questions
+ * ---------------------------------------------------------------------- */
+
+export const FAQ_COPY = {
+  title: 'Frequently Asked Questions',
+  subtitle: 'Everything you need to know before joining your first arena.',
+  stillStuck: {
+    title: 'Still have a question?',
+    body: 'Could not find what you are looking for? Join our Discord, reach out to the community, or contact the team. We are happy to help.',
+    cta: { label: 'Contact us', href: '/contact' },
+    secondaryCta: { label: 'Join Discord', href: '/discord' },
+  },
+} as const;
+
+export const FAQS: FaqEntry[] = [
+  {
+    id: 'what',
+    question: 'What is SquadUp?',
+    answer: [
+      'SquadUp is a collaborative developer arena where individuals and teams build real software through project-based competitions.',
+      'Instead of solving coding questions, participants create complete applications inside a shared workspace and compete on engineering quality, creativity and execution.',
+    ],
+  },
+  {
+    id: 'team',
+    question: 'Do I need a team before joining?',
+    answer: [
+      'No. You can compete solo or create a squad. If you do not have teammates yet, SquadUp helps you find developers with complementary skills and build one.',
+    ],
+  },
+  {
+    id: 'beginners',
+    question: 'Can beginners participate?',
+    answer: [
+      'Yes. Arenas run at multiple difficulty levels, from beginner-friendly challenges to advanced engineering competitions. The goal is continuous learning and building, not just winning.',
+    ],
+  },
+  {
+    id: 'inside',
+    question: 'Do I build projects inside SquadUp?',
+    answer: [
+      'Yes. Every arena gives your squad a collaborative workspace to code, communicate, preview, deploy and submit, without leaving the platform.',
+    ],
+  },
+  {
+    id: 'judging',
+    question: 'How are projects evaluated?',
+    answer: [
+      'Against the criteria of the specific challenge. Depending on the arena, judging may weigh functionality, user experience, technical implementation, creativity, performance and overall execution.',
+    ],
+  },
+  {
+    id: 'prizes',
+    question: 'What can I win?',
+    answer: [
+      'It depends on the competition. Every completed project also strengthens your developer profile, whether or not you place.',
+    ],
+    points: [
+      'Cash prizes',
+      'Squad Points',
+      'Achievement badges',
+      'Public recognition',
+      'Exclusive merchandise',
+    ],
+  },
+  {
+    id: 'free',
+    question: 'Is SquadUp free?',
+    answer: [
+      'Yes. Creating an account, joining squads and entering standard arenas is free. Premium experiences or sponsored competitions may be introduced later.',
+    ],
+  },
+  {
+    id: 'after',
+    question: 'Can I keep working on my project after the arena ends?',
+    answer: [
+      'Yes. Projects belong to your squad. Keep improving them, put them in your portfolio, or turn them into real products.',
+    ],
+  },
+  {
+    id: 'ownership',
+    question: 'Who owns the projects built on SquadUp?',
+    answer: [
+      'Your squad does. SquadUp provides the collaborative environment and claims no ownership of what you build.',
+    ],
+  },
+  {
+    id: 'different',
+    question: 'Why is SquadUp different from other coding platforms?',
+    answer: [
+      'Most platforms focus on solving questions or submitting a finished file. SquadUp focuses on building real software together, combining collaboration, competition, project building and developer growth into one experience.',
+    ],
+  },
+];
+
+/* -------------------------------------------------------------------------
+ * Section 11 — Your First Arena Starts Here
+ * ---------------------------------------------------------------------- */
+
+export const FINAL_CTA_COPY = {
+  title: 'Your Next Great Project Starts Here.',
+  subtitle:
+    'Join developers who are building real products, forming lasting squads, and growing through every arena. Your first challenge is waiting.',
+  primaryCta: { label: 'Enter Your First Arena', href: '/signup' },
+  secondaryCta: { label: 'Explore Arenas', href: '/arenas' },
+  /* Removes the two biggest objections without adding another FAQ entry. */
+  supporting: [
+    'No team? We will help you find one.',
+    'New to development? Start with a beginner-friendly arena.',
+  ],
+  closing:
+    'Every great product started with one idea. Every great team started with one squad.',
 } as const;
