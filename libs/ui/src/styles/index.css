@@ -4,8 +4,13 @@
  * Both apps import this and nothing else, so web and ops cannot drift:
  *   import '@squadup.in/ui/styles.css';
  *
- * NOTE: the tokens below are placeholder neutrals. The real palette,
- * typography scale and elevation ramp land in the style-guide pass.
+ * Structure mirrors the system used across the other regiment repos:
+ *   1. semantic HSL triplets declared once in `@layer base`
+ *   2. surfaced to Tailwind through `@theme` as `--color-*: hsl(var(--*))`
+ *   3. two independent type scales — product chrome and marketing display
+ *
+ * Never hardcode a hex value in a component. If a shade is missing, add a
+ * token here first.
  */
 
 @import 'tailwindcss';
@@ -25,6 +30,23 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
+  /* Breakpoints — xs for small phones, 2xl for the marketing max width. */
+  --breakpoint-xs: 425px;
+  --breakpoint-2xl: 1440px;
+
+  /*
+   * Font — Inter, self-hosted by next/font at build time and bound to this
+   * variable in the app's root layout. next/font inlines the font files with
+   * the build output, so nothing is fetched from a third party at first paint.
+   * Do not reintroduce a Google Fonts @import.
+   */
+  --font-sans:
+    var(--font-inter), ui-sans-serif, system-ui, -apple-system, 'Segoe UI',
+    sans-serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+
+  /* Core surfaces */
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
 
@@ -53,72 +75,407 @@
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
 
-  --radius-lg: var(--radius);
-  --radius-md: calc(var(--radius) - 2px);
+  /* Status */
+  --color-success: hsl(var(--success));
+  --color-success-foreground: hsl(var(--success-foreground));
+  --color-warning: hsl(var(--warning));
+  --color-warning-foreground: hsl(var(--warning-foreground));
+  --color-info: hsl(var(--info));
+  --color-info-foreground: hsl(var(--info-foreground));
+  --color-danger: hsl(var(--danger));
+  --color-danger-foreground: hsl(var(--danger-foreground));
+
+  /*
+   * Arena accents — one per competition category. Each pairs a saturated
+   * `-accent` for icons, borders and text with a pale `-soft` for the icon
+   * tile behind it. Card backgrounds stay `--card` regardless of arena.
+   */
+  --color-arena-frontend: hsl(var(--arena-frontend));
+  --color-arena-frontend-soft: hsl(var(--arena-frontend-soft));
+  --color-arena-backend: hsl(var(--arena-backend));
+  --color-arena-backend-soft: hsl(var(--arena-backend-soft));
+  --color-arena-devops: hsl(var(--arena-devops));
+  --color-arena-devops-soft: hsl(var(--arena-devops-soft));
+  --color-arena-react: hsl(var(--arena-react));
+  --color-arena-react-soft: hsl(var(--arena-react-soft));
+  --color-arena-ai: hsl(var(--arena-ai));
+  --color-arena-ai-soft: hsl(var(--arena-ai-soft));
+
+  /* Radius — lg is the base; xl and 2xl are the marketing card sizes. */
   --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 12px);
+
+  /*
+   * Elevation — deliberately soft. The landing doc asks for "slight elevation,
+   * softer shadow" on hover and bans anything flashy, so the ramp climbs in
+   * blur rather than in opacity.
+   */
+  --shadow-1: 0 1px 2px 0 rgb(16 8 40 / 0.04);
+  --shadow-2: 0 2px 8px 0 rgb(16 8 40 / 0.06);
+  --shadow-3: 0 4px 16px 0 rgb(16 8 40 / 0.08);
+  --shadow-4: 0 8px 28px 0 rgb(16 8 40 / 0.1);
+  --shadow-5: 0 16px 48px 0 rgb(16 8 40 / 0.12);
+
+  /* Named gradients — referenced as `bg-arena-glow` etc. */
+  --background-image-arena-glow: radial-gradient(
+    ellipse 80% 60% at 50% 0%,
+    hsl(var(--primary) / 0.12),
+    transparent 70%
+  );
+  --background-image-section-fade: linear-gradient(
+    to bottom,
+    hsl(var(--background)),
+    hsl(var(--secondary) / 0.4)
+  );
+  --background-image-brand-sweep: linear-gradient(
+    100deg,
+    hsl(var(--primary)),
+    hsl(var(--arena-ai)) 55%,
+    hsl(var(--arena-devops))
+  );
 }
+
+/* ---------------------------------------------------------------------------
+ * Typography utilities
+ *
+ * Every `text-*` suffix declared below MUST also be listed in
+ * FONT_SIZE_SUFFIXES in ../utils.ts. tailwind-merge reads an unrecognised
+ * `text-*` as a text COLOR, so without it a following `text-white` silently
+ * drops the size.
+ * ------------------------------------------------------------------------ */
+
+/* Product scale — fixed across breakpoints so app chrome stays consistent. */
+@utility text-h1 {
+  font-size: var(--typography-h1-size);
+  line-height: var(--typography-h1-line);
+  letter-spacing: var(--typography-h1-tracking);
+}
+@utility text-h2 {
+  font-size: var(--typography-h2-size);
+  line-height: var(--typography-h2-line);
+  letter-spacing: var(--typography-h2-tracking);
+}
+@utility text-h3 {
+  font-size: var(--typography-h3-size);
+  line-height: var(--typography-h3-line);
+  letter-spacing: var(--typography-h3-tracking);
+}
+@utility text-h4 {
+  font-size: var(--typography-h4-size);
+  line-height: var(--typography-h4-line);
+  letter-spacing: var(--typography-h4-tracking);
+}
+@utility text-h5 {
+  font-size: var(--typography-h5-size);
+  line-height: var(--typography-h5-line);
+  letter-spacing: var(--typography-h5-tracking);
+}
+@utility text-h6 {
+  font-size: var(--typography-h6-size);
+  line-height: var(--typography-h6-line);
+  letter-spacing: var(--typography-h6-tracking);
+}
+@utility text-subtitle {
+  font-size: var(--typography-subtitle-size);
+  line-height: var(--typography-subtitle-line);
+  letter-spacing: var(--typography-subtitle-tracking);
+}
+@utility text-subtitle2 {
+  font-size: var(--typography-subtitle2-size);
+  line-height: var(--typography-subtitle2-line);
+  letter-spacing: var(--typography-subtitle2-tracking);
+}
+@utility text-body {
+  font-size: var(--typography-body-size);
+  line-height: var(--typography-body-line);
+  letter-spacing: var(--typography-body-tracking);
+}
+@utility text-body-sm {
+  font-size: var(--typography-body-sm-size);
+  line-height: var(--typography-body-sm-line);
+  letter-spacing: var(--typography-body-sm-tracking);
+}
+@utility text-caption {
+  font-size: var(--typography-caption-size);
+  line-height: var(--typography-caption-line);
+  letter-spacing: var(--typography-caption-tracking);
+}
+@utility text-micro {
+  font-size: var(--typography-micro-size);
+  line-height: var(--typography-micro-line);
+  letter-spacing: var(--typography-micro-tracking);
+}
+@utility text-overline {
+  font-size: var(--typography-overline-size);
+  line-height: var(--typography-overline-line);
+  letter-spacing: var(--typography-overline-tracking);
+  text-transform: uppercase;
+}
+
+/*
+ * Display scale — MARKETING only. Responsive: the base values are mobile and
+ * the media query below bumps them at sm. The landing page's manifesto and
+ * closing sections are carried entirely by these.
+ */
+@utility text-display-xl {
+  font-size: var(--typography-display-xl-size);
+  line-height: var(--typography-display-xl-line);
+  letter-spacing: var(--typography-display-xl-tracking);
+}
+@utility text-display-lg {
+  font-size: var(--typography-display-lg-size);
+  line-height: var(--typography-display-lg-line);
+  letter-spacing: var(--typography-display-lg-tracking);
+}
+@utility text-display-md {
+  font-size: var(--typography-display-md-size);
+  line-height: var(--typography-display-md-line);
+  letter-spacing: var(--typography-display-md-tracking);
+}
+@utility text-display-sm {
+  font-size: var(--typography-display-sm-size);
+  line-height: var(--typography-display-sm-line);
+  letter-spacing: var(--typography-display-sm-tracking);
+}
+
+/* Badge text (10px). Size-only, so it never overrides a badge's own tracking. */
+@utility text-badge {
+  font-size: var(--typography-micro-size);
+}
+
+/* ---------------------------------------------------------------------------
+ * Helper utilities
+ * ------------------------------------------------------------------------ */
+
+/* Hide scrollbars while keeping the element scrollable — mobile card rails. */
+@utility scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Fade the leading and trailing edges of a horizontal rail or marquee. */
+@utility mask-fade-sides {
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 6%,
+    black 94%,
+    transparent
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 6%,
+    black 94%,
+    transparent
+  );
+}
+
+/* ---------------------------------------------------------------------------
+ * Tokens
+ * ------------------------------------------------------------------------ */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 4%;
+    /* Surfaces — a faintly violet off-white ground so white cards separate. */
+    --background: 260 40% 99%;
+    --foreground: 260 30% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 4%;
+    --card-foreground: 260 30% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 4%;
+    --popover-foreground: 260 30% 10%;
 
-    --primary: 243 75% 59%;
+    /* Brand purple. */
+    --primary: 262 83% 58%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 240 5% 96%;
-    --secondary-foreground: 240 6% 10%;
+    --secondary: 260 30% 96%;
+    --secondary-foreground: 260 30% 16%;
 
-    --muted: 240 5% 96%;
-    --muted-foreground: 240 4% 46%;
+    --muted: 260 25% 96%;
+    --muted-foreground: 260 8% 46%;
 
-    --accent: 240 5% 96%;
-    --accent-foreground: 240 6% 10%;
+    --accent: 262 60% 96%;
+    --accent-foreground: 262 70% 38%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 240 6% 90%;
-    --input: 240 6% 90%;
-    --ring: 243 75% 59%;
+    --border: 260 20% 91%;
+    --input: 260 20% 91%;
+    --ring: 262 83% 58%;
 
-    --radius: 0.625rem;
+    /* Status */
+    --success: 142 71% 40%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 46%;
+    --warning-foreground: 38 92% 12%;
+    --info: 217 91% 55%;
+    --info-foreground: 0 0% 100%;
+    --danger: 0 84% 58%;
+    --danger-foreground: 0 0% 100%;
+
+    /* Arena accents — the five categories named in the landing doc. */
+    --arena-frontend: 262 83% 58%;
+    --arena-frontend-soft: 262 80% 96%;
+    --arena-backend: 142 65% 38%;
+    --arena-backend-soft: 142 60% 94%;
+    --arena-devops: 217 91% 55%;
+    --arena-devops-soft: 217 90% 95%;
+    --arena-react: 25 95% 50%;
+    --arena-react-soft: 25 95% 95%;
+    --arena-ai: 330 81% 57%;
+    --arena-ai-soft: 330 85% 96%;
+
+    --radius: 0.75rem;
+
+    /*
+     * Typography — PRODUCT UI. Fixed sizes, tracking 0, line-heights tuned
+     * for readability. Shared with ops, so do not make these responsive.
+     */
+    --typography-h1-size: 2.25rem; /* 36px / Bold */
+    --typography-h1-line: 1.2;
+    --typography-h1-tracking: -0.01em;
+
+    --typography-h2-size: 2rem; /* 32px / Semibold */
+    --typography-h2-line: 1.25;
+    --typography-h2-tracking: -0.01em;
+
+    --typography-h3-size: 1.75rem; /* 28px / Semibold */
+    --typography-h3-line: 1.3;
+    --typography-h3-tracking: 0em;
+
+    --typography-h4-size: 1.5rem; /* 24px / Semibold */
+    --typography-h4-line: 1.3;
+    --typography-h4-tracking: 0em;
+
+    --typography-h5-size: 1.25rem; /* 20px / Medium */
+    --typography-h5-line: 1.4;
+    --typography-h5-tracking: 0em;
+
+    --typography-h6-size: 1.125rem; /* 18px / Medium */
+    --typography-h6-line: 1.4;
+    --typography-h6-tracking: 0em;
+
+    --typography-subtitle-size: 1.25rem; /* 20px / Regular */
+    --typography-subtitle-line: 1.5;
+    --typography-subtitle-tracking: 0em;
+
+    --typography-subtitle2-size: 1.125rem; /* 18px / Regular */
+    --typography-subtitle2-line: 1.5;
+    --typography-subtitle2-tracking: 0em;
+
+    --typography-body-size: 1rem; /* 16px / Regular */
+    --typography-body-line: 1.6;
+    --typography-body-tracking: 0em;
+
+    --typography-body-sm-size: 0.875rem; /* 14px / Regular */
+    --typography-body-sm-line: 1.6;
+    --typography-body-sm-tracking: 0em;
+
+    --typography-caption-size: 0.75rem; /* 12px / Regular */
+    --typography-caption-line: 1.5;
+    --typography-caption-tracking: 0em;
+
+    --typography-micro-size: 0.625rem; /* 10px — badges and micro labels */
+    --typography-micro-line: 1.4;
+    --typography-micro-tracking: 0.02em;
+
+    --typography-overline-size: 0.75rem;
+    --typography-overline-line: 1.6;
+    --typography-overline-tracking: 0.12em;
+
+    /* Typography — MARKETING display. Mobile values; bumped at sm below. */
+    --typography-display-xl-size: 2.75rem; /* 44px mobile */
+    --typography-display-xl-line: 1.05;
+    --typography-display-xl-tracking: -0.035em;
+
+    --typography-display-lg-size: 2.25rem; /* 36px mobile */
+    --typography-display-lg-line: 1.1;
+    --typography-display-lg-tracking: -0.03em;
+
+    --typography-display-md-size: 1.875rem; /* 30px mobile */
+    --typography-display-md-line: 1.15;
+    --typography-display-md-tracking: -0.02em;
+
+    --typography-display-sm-size: 1.5rem; /* 24px mobile */
+    --typography-display-sm-line: 1.25;
+    --typography-display-sm-tracking: -0.015em;
+
+    /* Letter spacing */
+    --tracking-tight: -0.02em;
+    --tracking-normal: 0em;
+    --tracking-wide: 0.08em;
+  }
+
+  /* Display scale only — product UI stays fixed at every width. */
+  @media (min-width: 640px) {
+    :root {
+      --typography-display-xl-size: 4.5rem; /* 72px */
+      --typography-display-lg-size: 3.5rem; /* 56px */
+      --typography-display-md-size: 2.5rem; /* 40px */
+      --typography-display-sm-size: 2rem; /* 32px */
+    }
   }
 
   .dark {
-    --background: 240 10% 4%;
-    --foreground: 0 0% 98%;
+    --background: 260 30% 7%;
+    --foreground: 260 20% 97%;
 
-    --card: 240 6% 10%;
-    --card-foreground: 0 0% 98%;
+    --card: 260 25% 11%;
+    --card-foreground: 260 20% 97%;
 
-    --popover: 240 6% 10%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 260 25% 11%;
+    --popover-foreground: 260 20% 97%;
 
-    --primary: 243 75% 66%;
-    --primary-foreground: 240 10% 4%;
+    --primary: 262 83% 68%;
+    --primary-foreground: 260 30% 8%;
 
-    --secondary: 240 4% 16%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 260 20% 16%;
+    --secondary-foreground: 260 20% 97%;
 
-    --muted: 240 4% 16%;
-    --muted-foreground: 240 5% 65%;
+    --muted: 260 20% 16%;
+    --muted-foreground: 260 10% 65%;
 
-    --accent: 240 4% 16%;
-    --accent-foreground: 0 0% 98%;
+    --accent: 262 40% 20%;
+    --accent-foreground: 262 80% 88%;
 
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 240 4% 16%;
-    --input: 240 4% 16%;
-    --ring: 243 75% 66%;
+    --border: 260 18% 20%;
+    --input: 260 18% 20%;
+    --ring: 262 83% 68%;
+
+    /* Status — same hues, lifted for legibility on a dark ground. */
+    --success: 142 55% 48%;
+    --success-foreground: 142 70% 96%;
+    --warning: 38 90% 58%;
+    --warning-foreground: 38 92% 12%;
+    --info: 217 85% 66%;
+    --info-foreground: 217 70% 96%;
+    --danger: 0 72% 60%;
+    --danger-foreground: 0 84% 96%;
+
+    /* Arena accents — brightened, soft tiles become tinted darks. */
+    --arena-frontend: 262 83% 70%;
+    --arena-frontend-soft: 262 40% 20%;
+    --arena-backend: 142 60% 52%;
+    --arena-backend-soft: 142 35% 16%;
+    --arena-devops: 217 85% 66%;
+    --arena-devops-soft: 217 40% 20%;
+    --arena-react: 25 90% 60%;
+    --arena-react-soft: 25 45% 18%;
+    --arena-ai: 330 80% 68%;
+    --arena-ai-soft: 330 40% 20%;
   }
 
   * {
@@ -126,6 +483,81 @@
   }
 
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+}
+
+/*
+ * Locks a subtree to the light palette regardless of the active theme.
+ * Unlayered so it wins over the base layer's `:root` / `.dark` tokens.
+ *
+ * The hero is built on a bright daylight photograph with near-black type over
+ * it. Following the theme into dark mode would put light text on a light
+ * image, so the hero opts out and the rest of the page still switches.
+ */
+.surface-light {
+  --background: 260 40% 99%;
+  --foreground: 260 30% 10%;
+  --card: 0 0% 100%;
+  --card-foreground: 260 30% 10%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 260 30% 10%;
+  --primary: 262 83% 58%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 260 30% 96%;
+  --secondary-foreground: 260 30% 16%;
+  --muted: 260 25% 96%;
+  --muted-foreground: 260 8% 46%;
+  --accent: 262 60% 96%;
+  --accent-foreground: 262 70% 38%;
+  --border: 260 20% 91%;
+  --input: 260 20% 91%;
+}
+
+/* ---------------------------------------------------------------------------
+ * Animation
+ *
+ * Scroll-triggered motion belongs in the MotionWrapper atom. These are the
+ * ambient, always-running effects that motion/react would be overkill for.
+ * ------------------------------------------------------------------------ */
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee 40s linear infinite;
+  width: max-content;
+}
+
+.pause-on-hover:hover .animate-marquee {
+  animation-play-state: paused;
+}
+
+/* Slowly pans an oversized gradient so a static hero still feels alive. */
+@keyframes brand-pan {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 100% 50%;
+  }
+}
+
+.animate-brand-pan {
+  background-size: 200% 200%;
+  animation: brand-pan 14s ease-in-out infinite alternate;
+}
+
+/* Honour the OS setting — every ambient animation stops. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee,
+  .animate-brand-pan {
+    animation: none;
   }
 }
