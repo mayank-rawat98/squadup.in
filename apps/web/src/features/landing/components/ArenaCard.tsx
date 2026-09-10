@@ -75,13 +75,27 @@ function ArenaCard({ arena, compact = false, className }: ArenaCardProps) {
           <Badge variant={arena.difficulty} pill={false}>
             {ARENA_DIFFICULTY_LABEL[arena.difficulty]}
           </Badge>
-          <Badge variant="outline" pill={false}>
+          {/* Prizes range from "₹5,000" to "SquadUp Merchandise". */}
+          <Badge variant="outline" pill={false} className="max-w-full truncate">
             {arena.prize}
           </Badge>
         </div>
       )}
 
-      <div className="border-border flex items-center justify-between gap-2 border-t pt-3">
+      {/*
+       * Compact keeps the meta and the arrow on one line, since it carries no
+       * label. The full card puts the labelled link on its own row — at five
+       * columns there is not enough width for both, and squeezing them
+       * truncated the duration down to "W...".
+       */}
+      <div
+        className={cn(
+          'border-border gap-2 border-t pt-3',
+          compact
+            ? 'flex items-center justify-between'
+            : 'flex flex-col items-start gap-2.5',
+        )}
+      >
         <div className="text-muted-foreground flex min-w-0 items-center gap-3 text-caption">
           <span className="inline-flex shrink-0 items-center gap-1.5">
             <Users className="h-3.5 w-3.5" aria-hidden="true" />

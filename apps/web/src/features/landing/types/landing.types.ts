@@ -53,3 +53,28 @@ export interface FooterColumn {
   title: string;
   links: Array<NavItem & { comingSoon?: boolean }>;
 }
+
+/** A card in the Find -> Form -> Compete flow. */
+export interface SquadStep {
+  id: string;
+  icon: LucideIcon;
+  title: string;
+  description: string;
+}
+
+/** A stage in the Build Inside SquadUp workflow. */
+export interface BuildStep {
+  id: string;
+  icon: LucideIcon;
+  title: string;
+  description: string;
+  /** Rendered as a short bullet list under the description. */
+  highlights?: string[];
+}
+
+/** One of the four roles shown on the example squad card. */
+export interface SquadRole {
+  name: string;
+  role: string;
+  accent: ArenaAccent;
+}
