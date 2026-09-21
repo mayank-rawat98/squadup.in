@@ -11,7 +11,12 @@ import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 import { AdminOpsModule } from './admin-ops/admin-ops.module';
 import { AdminOpsAuditsController } from './admin-ops/audits/admin-ops-audits.controller';
+import { AdminOpsBlogsController } from './admin-ops/blogs/admin-ops-blogs.controller';
 import { AdminOpsEmailTemplatesController } from './admin-ops/email-templates/admin-ops-email-templates.controller';
+import { AdminOpsFeatureFlagsController } from './admin-ops/feature-flags/admin-ops-feature-flags.controller';
+import { AdminOpsFeatureRequestsController } from './admin-ops/feature-flags/admin-ops-feature-requests.controller';
+import { AdminOpsReferenceDataController } from './admin-ops/reference-data/admin-ops-reference-data.controller';
+import { AdminOpsSecurityController } from './admin-ops/security/admin-ops-security.controller';
 import { AdminOpsUsersController } from './admin-ops/users/admin-ops-users.controller';
 import { AuditsController } from './audits/audits.controller';
 import { AuditsModule } from './audits/audits.module';
@@ -20,11 +25,14 @@ import { AuthModule } from './auth/auth.module';
 import { EmailChangeController } from './auth/email-change.controller';
 import { BackupController } from './backup/backup.controller';
 import { BackupModule } from './backup/backup.module';
+import { BlogsModule } from './blogs/blogs.module';
 import { ChangelogController } from './changelog/changelog.controller';
 import { ChangelogModule } from './changelog/changelog.module';
 import { AuthMiddleware } from './common/middleware/auth.middleware';
 import { createAuditClientConfig } from './config';
 import { DbModule } from './db/db.module';
+import { FeatureFlagsController } from './feature-flags/controllers/feature-flags.controller';
+import { FeatureFlagsModule } from './feature-flags/feature-flags.module';
 import { FormsController } from './forms/forms.controller';
 import { FormsModule } from './forms/forms.module';
 import { MailerModule } from './mailer/mailer.module';
@@ -35,6 +43,9 @@ import { NotificationController } from './notifications/controllers/notification
 import { NotificationsModule } from './notifications/notifications.module';
 import { RateLimiterModule } from './rate-limiter/rate-limiter.module';
 import { RedisModule } from './redis/redis.module';
+import { ReferenceDataModule } from './reference-data/reference-data.module';
+import { SearchController } from './search/search.controller';
+import { SearchModule } from './search/search.module';
 import { GeneralSettingsController } from './settings/general-settings.controller';
 import { SettingsController } from './settings/settings.controller';
 import { SettingsModule } from './settings/settings.module';
@@ -42,6 +53,8 @@ import { StaffAuthMiddleware } from './staff/middleware/staff-auth.middleware';
 import { StaffAuthController } from './staff/staff-auth.controller';
 import { StaffController } from './staff/staff.controller';
 import { StaffModule } from './staff/staff.module';
+import { TourController } from './tour/tour.controller';
+import { TourModule } from './tour/tour.module';
 import { UsersController } from './users/users.controller';
 import { UsersModule } from './users/users.module';
 
@@ -99,6 +112,11 @@ import { UsersModule } from './users/users.module';
     ChangelogModule,
     AdminOpsModule,
     StaffModule,
+    FeatureFlagsModule,
+    TourModule,
+    ReferenceDataModule,
+    SearchModule,
+    BlogsModule,
   ],
   controllers: [],
   providers: [],
@@ -149,6 +167,9 @@ export class AppModule implements NestModule {
         SettingsController,
         GeneralSettingsController,
         AuditsController,
+        FeatureFlagsController,
+        TourController,
+        SearchController,
       );
 
     // Staff realm — the ops dashboard authenticates with a staff token; there is
@@ -178,6 +199,11 @@ export class AppModule implements NestModule {
         AdminOpsUsersController,
         AdminOpsEmailTemplatesController,
         AdminOpsAuditsController,
+        AdminOpsSecurityController,
+        AdminOpsFeatureFlagsController,
+        AdminOpsFeatureRequestsController,
+        AdminOpsReferenceDataController,
+        AdminOpsBlogsController,
         BackupController,
         MinioController,
         FormsController,
