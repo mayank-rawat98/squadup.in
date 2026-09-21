@@ -13,6 +13,7 @@ module.exports = {
   displayName: '@squadup.in/api',
   preset: '../../jest.preset.js',
   testEnvironment: 'node',
+  setupFiles: ['<rootDir>/jest.env.setup.ts'],
   transform: {
     '^.+\\.[tj]s$': ['@swc/jest', swcJestConfig]
   },

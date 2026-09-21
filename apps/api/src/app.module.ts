@@ -17,6 +17,7 @@ import { AuditsController } from './audits/audits.controller';
 import { AuditsModule } from './audits/audits.module';
 import { AuthController } from './auth/auth.controller';
 import { AuthModule } from './auth/auth.module';
+import { EmailChangeController } from './auth/email-change.controller';
 import { BackupController } from './backup/backup.controller';
 import { BackupModule } from './backup/backup.module';
 import { ChangelogController } from './changelog/changelog.controller';
@@ -132,10 +133,18 @@ export class AppModule implements NestModule {
         { path: 'v1/auth/2fa/select-method', method: RequestMethod.POST },
         { path: 'v1/auth/2fa/passkey/options', method: RequestMethod.POST },
         { path: 'v1/auth/2fa/passkey/verify', method: RequestMethod.POST },
+        // Reached from the link in the change-notification email, where the
+        // recipient is by definition locked out of the account. The revert
+        // token in the path is the credential.
+        {
+          path: 'v1/auth/email-change/revert/:token',
+          method: RequestMethod.POST,
+        },
       )
       .forRoutes(
         UsersController,
         AuthController,
+        EmailChangeController,
         NotificationController,
         SettingsController,
         GeneralSettingsController,
