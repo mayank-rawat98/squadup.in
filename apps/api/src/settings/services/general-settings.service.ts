@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { SettingsRepository } from '../settings.repository';
+import { ReferenceDataService } from '../../reference-data/reference-data.service';
 import { UpdateGeneralSettingsDto } from '../dto/general-settings.dto';
 import { DateFormat } from '../entities/user-settings.entity';
 
@@ -19,7 +20,10 @@ export class GeneralSettingsService {
     language: 'en',
   };
 
-  constructor(private readonly settingsRepo: SettingsRepository) {}
+  constructor(
+    private readonly settingsRepo: SettingsRepository,
+    private readonly referenceData: ReferenceDataService,
+  ) {}
 
   async get(userId: string): Promise<GeneralSettings> {
     const settings = await this.settingsRepo.findByUserId(userId);
@@ -36,6 +40,14 @@ export class GeneralSettingsService {
     userId: string,
     dto: UpdateGeneralSettingsDto,
   ): Promise<GeneralSettings> {
+    // Validate each provided value against the active reference-data tables.
+    if (dto.currency)
+      await this.referenceData.assertCurrencyExists(dto.currency);
+    if (dto.timezone)
+      await this.referenceData.assertTimezoneExists(dto.timezone);
+    if (dto.language)
+      await this.referenceData.assertLanguageExists(dto.language);
+
     const patch: Partial<GeneralSettings> = {};
     if (dto.currency) patch.currency = dto.currency.toUpperCase();
     if (dto.timezone) patch.timezone = dto.timezone;

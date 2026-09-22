@@ -1,21 +1,47 @@
-import { Button } from '@squadup.in/ui';
+import { SiteFooter, SiteHeader } from '@/components/organisms';
+import {
+  BuildersSection,
+  BuildInsideSection,
+  BuildSquadSection,
+  BuiltOnSection,
+  ChampionsSection,
+  ChooseArenaSection,
+  FaqSection,
+  FinalCtaSection,
+  HeroSection,
+  JourneySection,
+  LiveArenasSection,
+  ManifestoSection,
+  RewardsSection,
+} from '@/features/landing';
 
-export default function Index() {
+/*
+ * Route composition only. The order is the landing brief's, start to finish:
+ * introduce the arena, show what you can compete in, explain the squad, prove
+ * the workspace, celebrate the winners, argue the growth, list the rewards,
+ * describe the community, show the work, state the belief, remove the last
+ * doubts, then invite.
+ */
+export default function LandingPage() {
   return (
-    <main className="mx-auto flex min-h-dvh max-w-3xl flex-col items-start justify-center gap-6 px-6">
-      <div className="space-y-2">
-        <h1 className="text-4xl font-semibold tracking-tight">squadup</h1>
-        <p className="text-muted-foreground">
-          Styled by <code className="font-mono">@squadup.in/ui</code> — the same
-          design system ops runs on.
-        </p>
-      </div>
-      <div className="flex flex-wrap gap-3">
-        <Button>Primary</Button>
-        <Button variant="secondary">Secondary</Button>
-        <Button variant="outline">Outline</Button>
-        <Button variant="ghost">Ghost</Button>
-      </div>
-    </main>
+    <>
+      <SiteHeader />
+      <main>
+        <HeroSection />
+        <LiveArenasSection />
+        <ChooseArenaSection />
+        <BuildSquadSection />
+        <BuildInsideSection />
+        <ChampionsSection />
+        <JourneySection />
+        <RewardsSection />
+        <BuildersSection />
+        <BuiltOnSection />
+        <ManifestoSection />
+        <FaqSection />
+        <FinalCtaSection />
+      </main>
+      <SiteFooter />
+    </>
   );
 }

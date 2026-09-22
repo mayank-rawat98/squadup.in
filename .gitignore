@@ -51,3 +51,8 @@ test-output
 # Next.js
 .next
 out
+# Compiled TypeORM migrations (built inside the API image)
+dist-migrations
+
+# Written on the server by the deploy workflow; never committed
+.env.production

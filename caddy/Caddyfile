@@ -1,0 +1,124 @@
+# Reverse proxy and TLS for the production stack. Caddy obtains and renews a
+# certificate for every site below on its own, so there are no certificate
+# files to mount. Hostnames come from .env.production (see compose.yml), which
+# keeps this file free of environment-specific values.
+
+{
+	email {$ACME_EMAIL}
+}
+
+# Shared request headers for the upstream apps. Caddy already sets
+# X-Forwarded-For/-Proto/-Host; this adds the X-Real-IP the API reads.
+(proxied) {
+	header_up X-Real-IP {remote_host}
+}
+
+# Web app
+{$WEB_DOMAIN} {
+	encode zstd gzip
+	reverse_proxy client:3000 {
+		import proxied
+	}
+}
+
+# One canonical origin: the API's CORS allow-list and the passkey origin are
+# both exactly CLIENT_URL, so a page served from www would have its API calls
+# and passkey ceremonies rejected.
+www.{$WEB_DOMAIN} {
+	redir https://{$WEB_DOMAIN}{uri} permanent
+}
+
+# Ops dashboard
+{$OPS_DOMAIN} {
+	encode zstd gzip
+	reverse_proxy ops:3000 {
+		import proxied
+	}
+}
+
+# API (REST + Socket.IO; Caddy upgrades WebSocket connections automatically)
+{$API_DOMAIN} {
+	# Allow up to 10MB so NestJS/multer enforces the actual 5MB app limit.
+	# Multipart form overhead can push a 5MB file slightly over a raw 5MB cap.
+	request_body {
+		max_size 10MB
+	}
+
+	# Prometheus scrapes metrics over the internal network, so the endpoint has
+	# no reason to be reachable from the internet.
+	@metrics path /api/v1/metrics /api/v1/metrics/*
+	respond @metrics 404
+
+	encode zstd gzip
+	reverse_proxy server:8080 {
+		import proxied
+	}
+}
+
+# MinIO files (public buckets such as blog images)
+{$CDN_DOMAIN} {
+	request_body {
+		max_size 100MB
+	}
+	reverse_proxy minio:9000 {
+		import proxied
+		# MinIO sets its own CORS header on some routes, and two
+		# Access-Control-Allow-Origin headers are rejected as one malformed one.
+		header_down -Access-Control-Allow-Origin
+	}
+	# These objects are already public to anyone with the URL; the header only
+	# lets a page read what it can already fetch, e.g. fonts and canvas images.
+	header Access-Control-Allow-Origin "*"
+}
+
+# MinIO console
+{$MINIO_CONSOLE_DOMAIN} {
+	reverse_proxy minio:9001 {
+		import proxied
+	}
+}
+
+# Grafana
+{$METRICS_DOMAIN} {
+	reverse_proxy grafana:3000 {
+		import proxied
+	}
+}
+
+# ── novagate.dev ─────────────────────────────────────────────────────────────
+# A separate project on the same server. This Caddy owns ports 80/443 for both,
+# so novagate's public services are routed here and reached over its
+# novagate-edge network (see compose.yml). Its compose file lives in the
+# novagate.dev repo.
+
+# Dashboard
+{$NOVAGATE_DOMAIN:novagate.dev} {
+	encode zstd gzip
+	reverse_proxy dashboard:3003 {
+		import proxied
+	}
+}
+
+www.{$NOVAGATE_DOMAIN:novagate.dev} {
+	redir https://{$NOVAGATE_DOMAIN:novagate.dev}{uri} permanent
+}
+
+# Admin API
+api.{$NOVAGATE_DOMAIN:novagate.dev} {
+	encode zstd gzip
+	reverse_proxy admin-api:3001 {
+		import proxied
+	}
+}
+
+# Control-plane WebSocket. Only the gateway socket path is exposed.
+ws.{$NOVAGATE_DOMAIN:novagate.dev} {
+	handle /gateway-ws* {
+		reverse_proxy control-plane:8080 {
+			import proxied
+		}
+	}
+	handle {
+		respond 404
+	}
+}

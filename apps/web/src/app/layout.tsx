@@ -1,8 +1,25 @@
+import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
 import './global.css';
 
-export const metadata = {
-  title: 'squadup',
-  description: 'squadup.in',
+/*
+ * next/font downloads Inter at build time and serves it from our own origin,
+ * so no request reaches a third party on first paint. The variable is consumed
+ * by --font-sans in the design system's stylesheet.
+ */
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+});
+
+export const metadata: Metadata = {
+  title: {
+    default: 'SquadUp — Compete. Collaborate. Win together.',
+    template: '%s · SquadUp',
+  },
+  description:
+    'SquadUp is a collaborative developer arena where squads build real software through project-based competitions.',
 };
 
 export default function RootLayout({
@@ -11,7 +28,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className={inter.variable}>
       <body>{children}</body>
     </html>
   );

@@ -1,0 +1,13 @@
+# Keep the build context small and free of secrets. Every image installs its
+# own dependencies and builds from source, so nothing below is ever needed.
+**/node_modules
+**/dist
+**/dist-migrations
+**/.next
+**/out-tsc
+**/test-output
+.nx
+.git
+minio_data
+**/.env
+**/.env.*

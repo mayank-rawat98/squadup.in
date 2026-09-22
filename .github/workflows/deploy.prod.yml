@@ -1,0 +1,247 @@
+name: Squadup CI/CD
+
+on:
+  push:
+    branches: ['main']
+
+env:
+  REGISTRY: ghcr.io
+  DOCKER_REPOSITORY: mayank-rawat98 # your GitHub org/user — must be lowercase
+
+# Serialize runs so two quick pushes can't run migrate/deploy concurrently
+# against the same DB. Queue rather than cancel — never abort a deploy midway.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  create-env-file:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create .env file in server directory
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: root
+          key: ${{ secrets.PRIVATE_SSH_KEY }}
+          script: |
+            cd /root/squadup
+            echo "Creating .env.production file..."
+            printf '%s' "${{ secrets.PROD_ENV_FILE }}" > .env.production
+            echo "Environment file created successfully."
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      server: ${{ steps.filter.outputs.server }}
+      client: ${{ steps.filter.outputs.client }}
+      ops: ${{ steps.filter.outputs.ops }}
+      infra: ${{ steps.filter.outputs.infra }}
+      services_changed: ${{ contains(
+        fromJSON(
+        format(
+        '[{0},{1},{2},{3}]',
+        steps.filter.outputs.client,
+        steps.filter.outputs.server,
+        steps.filter.outputs.ops,
+        steps.filter.outputs.infra
+        )
+        ),
+        'true'
+        ) }}
+      any_changed: ${{ steps.filter.outputs.infra == 'true' || steps.filter.outputs.services_changed == 'true' }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Detect service changes
+        id: filter
+        uses: dorny/paths-filter@v4
+        with:
+          filters: |
+            # A dependency bump changes what every image installs, so the root
+            # manifests rebuild all three. Web and ops compile the shared UI
+            # library from source, so a change there rebuilds both.
+            server:
+              - 'apps/api/**'
+              - 'docker/api/**'
+              - 'package.json'
+              - 'package-lock.json'
+            client:
+              - 'apps/web/**'
+              - 'libs/**'
+              - 'docker/web/**'
+              - 'package.json'
+              - 'package-lock.json'
+            ops:
+              - 'apps/ops/**'
+              - 'libs/**'
+              - 'docker/ops/**'
+              - 'package.json'
+              - 'package-lock.json'
+            infra:
+              - '.github/workflows/**'
+              - 'docker/**'
+              - 'compose.yml'
+              - 'caddy/**'
+
+  build-and-push:
+    needs: detect-changes
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      matrix:
+        include:
+          - service: server
+            dockerfile: ./docker/api/Dockerfile
+            changed: ${{ needs.detect-changes.outputs.server }}
+          - service: client
+            dockerfile: ./docker/web/Dockerfile
+            changed: ${{ needs.detect-changes.outputs.client }}
+          - service: ops
+            dockerfile: ./docker/ops/Dockerfile
+            changed: ${{ needs.detect-changes.outputs.ops }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          # GITHUB_TOKEN is scoped to this run — no long-lived credential needed here
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build and push Docker image
+        if: matrix.changed == 'true'
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: true
+          provenance: false
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.DOCKER_REPOSITORY }}/squadup-${{ matrix.service }}:latest
+            ${{ env.REGISTRY }}/${{ env.DOCKER_REPOSITORY }}/squadup-${{ matrix.service }}:${{ github.sha }}
+      - name: Slack notify — Build and Push
+        if: always()
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_CHANNEL: general
+          SLACK_TITLE: 'Build & Push: ${{ job.status }}'
+          SLACK_MESSAGE: |
+            Repo: ${{ github.repository }}
+            • Branch/Ref: ${{ github.ref }}
+            • Status: ${{ job.status }}
+            • Environment: Production
+            • Actor: ${{ github.actor }}
+            • Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SLACK_COLOR: ${{ job.status }} # 'success' => green, 'failure' => red, 'cancelled' => gray
+
+  migrate:
+    name: Run DB migrations
+    # Needs the freshly built+pushed server image (which contains the compiled
+    # migrations) and the .env.production file on the VPS.
+    # Skip when only client/non-server files changed — no new server image was built.
+    needs: [detect-changes, build-and-push, create-env-file]
+    if: |
+      always() &&
+      needs.create-env-file.result == 'success' &&
+      (needs.build-and-push.result == 'success' || needs.build-and-push.result == 'skipped') &&
+      (needs.detect-changes.outputs.server == 'true' || needs.detect-changes.outputs.infra == 'true')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Run DB migrations on production VPS
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: root
+          key: ${{ secrets.PRIVATE_SSH_KEY }}
+          # Migrations run inside a one-off container on the stack's internal
+          # network (the DB has no host ports and only resolves there). The
+          # production server image ships compiled migrations under
+          # /app/dist-migrations/database and includes the typeorm CLI as a
+          # prod dep.
+          # set -e ensures a failed migration fails the step → deploy is gated.
+          script: |
+            set -e
+            cd /root/squadup
+            git fetch origin main
+            git reset --hard origin/main
+            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
+            docker compose --profile production --env-file .env.production pull server
+            docker compose --profile production --env-file .env.production run --rm server \
+              node node_modules/typeorm/cli.js migration:run -d dist-migrations/database/data-source.js
+
+      - name: Slack notify — Migration failure
+        if: failure()
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_CHANNEL: general
+          SLACK_TITLE: '[PROD — squadup] Migration: failure — deploy blocked'
+          SLACK_MESSAGE: |
+            Repo: ${{ github.repository }}
+            • Branch/Ref: ${{ github.ref }}
+            • Job: migrate
+            • Status: failure (deploy will not run)
+            • Environment: Production
+            • Actor: ${{ github.actor }}
+            • Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SLACK_COLOR: failure
+
+  deploy:
+    needs: [detect-changes, build-and-push, create-env-file, migrate]
+    # migrate is skipped on client-only changes, so allow 'skipped' but block on 'failure'.
+    # Also skip deploy entirely when no services changed (e.g. infra-only workflow edits
+    # with no image rebuild) to avoid pulling a non-existent :latest tag.
+    if: |
+      always() &&
+      needs.create-env-file.result == 'success' &&
+      needs.migrate.result != 'failure' &&
+      (needs.build-and-push.result == 'success' || needs.build-and-push.result == 'skipped') &&
+      (needs.detect-changes.outputs.server == 'true' || needs.detect-changes.outputs.client == 'true' || needs.detect-changes.outputs.ops == 'true' || needs.detect-changes.outputs.infra == 'true')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to production server
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: root
+          key: ${{ secrets.PRIVATE_SSH_KEY }}
+          script: |
+            cd /root/squadup
+            git fetch origin main
+            git reset --hard origin/main
+            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
+            # Pull only our own images. Third-party images are pinned in
+            # compose.yml and change only when that pin is edited and reviewed.
+            docker compose --profile production --env-file .env.production pull server client ops
+            # No --force-recreate: compose already recreates a service whose
+            # image or config changed, so unrelated services keep running
+            # untouched. Left unscoped so a compose-level change to any service
+            # is still applied automatically without a manual step.
+            docker compose --profile production --env-file .env.production up -d --remove-orphans
+      - name: Slack notify — Deploy
+        if: always()
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_CHANNEL: general
+          SLACK_TITLE: 'Deploy: ${{ job.status }}'
+          SLACK_MESSAGE: |
+            Repo: ${{ github.repository }}
+            • Branch/Ref: ${{ github.ref }}
+            • Job: deploy
+            • Status: ${{ job.status }}
+            • Environment: Production
+            • Actor: ${{ github.actor }}
+            • Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SLACK_COLOR: ${{ job.status }}

@@ -12,7 +12,26 @@ import { createTV } from 'tailwind-variants';
  * Keep this list in sync with the `@utility text-*` blocks in
  * src/styles/index.css.
  */
-const FONT_SIZE_SUFFIXES: string[] = [];
+const FONT_SIZE_SUFFIXES: string[] = [
+  'badge',
+  'h1',
+  'h2',
+  'h3',
+  'h4',
+  'h5',
+  'h6',
+  'subtitle',
+  'subtitle2',
+  'body',
+  'body-sm',
+  'caption',
+  'micro',
+  'overline',
+  'display-xl',
+  'display-lg',
+  'display-md',
+  'display-sm',
+];
 
 /*
  * Shared so both tailwind-merge (`cn`) and tailwind-variants (`tv`) resolve
