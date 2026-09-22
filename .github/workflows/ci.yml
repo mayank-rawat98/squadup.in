@@ -1,17 +1,30 @@
 name: CI
 
-# on:
-#   push:
-#     branches:
-#       - main
-#   pull_request:
+on:
+  push:
+    branches:
+      - dev
+  # Pull requests into main (dev → main) must pass before they can merge; the
+  # "protect main" ruleset requires the `ci` check. PRs into dev run it too, so
+  # contributors see failures before review.
+  pull_request:
+    branches:
+      - main
+      - dev
 
 permissions:
   actions: read
   contents: read
 
+# A newer push to the same branch or PR makes the running check obsolete.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   main:
+    # The status check name the ruleset requires.
+    name: ci
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -36,6 +49,3 @@ jobs:
       # Prepend any command with "nx record --" to record its logs to Nx Cloud
       # - run: npx nx record -- echo Hello World
       - run: npx nx run-many -t lint test build typecheck
-      # Nx Cloud recommends fixes for failures to help you get CI green faster. Learn more: https://nx.dev/ci/features/self-healing-ci
-      - run: npx nx fix-ci
-        if: always()

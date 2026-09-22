@@ -23,6 +23,11 @@
           "command": "next start --port 3001"
         }
       },
+      "build": {
+        "options": {
+          "env": { "NODE_ENV": "production" }
+        }
+      },
       "typecheck": {
         "cache": true,
         "dependsOn": ["^build"],
