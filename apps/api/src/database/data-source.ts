@@ -33,7 +33,12 @@ export default new DataSource({
     : false,
   // Required by `migration:generate`, which diffs entity metadata against the
   // live schema. The app itself uses autoLoadEntities and never reads this.
-  entities: [resolve(__dirname, '../**/*.entity{.ts,.js}')],
+  // Only loaded when running from TypeScript source: the compiled copy in the
+  // API image lives at /app/dist-migrations, where the same glob would sweep
+  // the whole image, node_modules included. `migration:run` needs no entities.
+  entities: __filename.endsWith('.ts')
+    ? [resolve(__dirname, '../**/*.entity.ts')]
+    : [],
   migrations: [resolve(__dirname, 'migrations/*{.ts,.js}')],
   migrationsTableName: 'typeorm_migrations',
   synchronize: false,

@@ -1,0 +1,277 @@
+name: squadup-compose
+
+# Production stack. Deployed by .github/workflows/deploy.prod.yml, which writes
+# .env.production on the server and runs:
+#   docker compose --profile production --env-file .env.production up -d
+#
+# .env.production is both the API's runtime environment and the source of the
+# values interpolated below. Beyond the API's own variables it must define:
+#   Hostnames served by Caddy: WEB_DOMAIN, OPS_DOMAIN, API_DOMAIN, CDN_DOMAIN,
+#     MINIO_CONSOLE_DOMAIN, METRICS_DOMAIN, and ACME_EMAIL for certificates
+#     (NOVAGATE_DOMAIN is optional and defaults to novagate.dev)
+#   Postgres: POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB
+#   MinIO: MINIO_ACCESS_KEY, MINIO_SECRET_KEY
+#   MongoDB: MONGO_INITDB_ROOT_USERNAME, MONGO_INITDB_ROOT_PASSWORD,
+#     MONGO_INITDB_DATABASE
+#   RabbitMQ: RABBITMQ_DEFAULT_USER, RABBITMQ_DEFAULT_PASS, RABBITMQ_DEFAULT_VHOST
+#   Grafana: GF_SECURITY_ADMIN_USER, GF_SECURITY_ADMIN_PASSWORD (and optionally
+#     the other GF_* settings passed through below)
+# The API reaches each backing service by its compose service name, so its
+# hosts are postgres, redis, mongodb, rabbitmq and minio.
+
+services:
+  client:
+    container_name: squadup-client
+    image: ghcr.io/mayank-rawat98/squadup-client:latest
+    build:
+      context: .
+      dockerfile: ./docker/web/Dockerfile
+      target: production
+    restart: unless-stopped
+    profiles:
+      - production
+    depends_on:
+      - server
+    networks:
+      - net-public # reachable by caddy only
+
+  ops:
+    container_name: squadup-ops
+    image: ghcr.io/mayank-rawat98/squadup-ops:latest
+    build:
+      context: .
+      dockerfile: ./docker/ops/Dockerfile
+      target: production
+    restart: unless-stopped
+    profiles:
+      - production
+    depends_on:
+      - server
+    networks:
+      - net-public # reachable by caddy only
+
+  server:
+    container_name: squadup-server
+    image: ghcr.io/mayank-rawat98/squadup-server:latest
+    build:
+      context: .
+      dockerfile: ./docker/api/Dockerfile
+      target: production
+    profiles:
+      - production
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    networks:
+      - net-public # caddy → server (HTTP API + WebSocket); outbound calls
+      - net-internal # server → postgres, mongodb, rabbitmq, minio, redis
+      - net-metrics # prometheus scrapes server metrics
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  caddy:
+    container_name: squadup-caddy
+    # Pinned: the reverse proxy fronts every request, so it changes only when
+    # this tag is edited and reviewed, never on a routine deploy.
+    image: caddy:2.10.2-alpine
+    profiles:
+      - production
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+      - '443:443/udp' # HTTP/3
+    env_file:
+      - .env.production
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      # Issued certificates and ACME account state. Losing this volume means
+      # re-issuing every certificate, which Let's Encrypt rate-limits.
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - server
+      - client
+      - ops
+    networks:
+      - net-public # reaches server, client, ops and minio
+      - net-metrics # reaches grafana for the metrics UI
+      - novagate-edge # reaches novagate.dev's dashboard, admin-api, control-plane
+
+  postgres:
+    image: postgres:15
+    container_name: squadup-postgres
+    restart: unless-stopped
+    profiles:
+      - production
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    # No published port: Postgres is reachable only on the internal network.
+    # Connect from a workstation through an SSH tunnel to the server.
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - net-internal # only server can reach postgres
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: squadup-prometheus
+    profiles:
+      - production
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prom_data:/prometheus
+    depends_on:
+      - server
+    networks:
+      - net-metrics # scrapes server; grafana reads from prometheus
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: squadup-grafana
+    profiles:
+      - production
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GF_SECURITY_ADMIN_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GF_SECURITY_ADMIN_PASSWORD}
+      - GF_USERS_ALLOW_SIGN_UP=${GF_USERS_ALLOW_SIGN_UP:-false}
+      - GF_USERS_AUTO_ASSIGN_ORG_ROLE=${GF_USERS_AUTO_ASSIGN_ORG_ROLE:-Viewer}
+      - GF_DEFAULT_THEME=${GF_DEFAULT_THEME:-dark}
+    depends_on:
+      - prometheus
+    networks:
+      - net-metrics # reads prometheus; caddy proxies the grafana UI
+    volumes:
+      - grafana_data:/var/lib/grafana
+
+  minio:
+    # Pinned: MinIO holds uploaded files, so an upgrade must be a reviewed
+    # change rather than something a deploy picks up on its own.
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    container_name: squadup-minio
+    profiles:
+      - production
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+    volumes:
+      # This local folder stores the actual data
+      - ./minio_data:/data
+    command: server /data --console-address ":9001"
+    networks:
+      - net-internal # server reads/writes objects
+      - net-public # caddy → minio files and console
+
+  mongodb:
+    image: mongo:7.0
+    container_name: squadup-mongodb
+    profiles:
+      - production
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
+      - MONGO_INITDB_DATABASE=${MONGO_INITDB_DATABASE}
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: ['CMD', 'mongosh', '--eval', "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - net-internal # only server can reach mongodb
+
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: squadup-rabbitmq
+    profiles:
+      - production
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}
+      - RABBITMQ_DEFAULT_VHOST=${RABBITMQ_DEFAULT_VHOST:-/}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+      - rabbitmq_logs:/var/log/rabbitmq
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 180s
+    networks:
+      - net-internal # only server can reach rabbitmq
+
+  redis:
+    image: redis:7-alpine
+    container_name: squadup-redis
+    profiles:
+      - production
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - net-internal # only server can reach redis
+
+networks:
+  # Faces the reverse proxy: caddy ↔ server ↔ client ↔ ops ↔ minio
+  net-public:
+    driver: bridge
+    internal: false
+
+  # Database / message-broker tier: invisible to caddy
+  net-internal:
+    driver: bridge
+    internal: true # no outbound internet from this network
+
+  # Observability: prometheus + grafana + server metrics endpoint
+  net-metrics:
+    driver: bridge
+    internal: true
+
+  # Created by the novagate.dev stack, which shares this server. Caddy here is
+  # the only process bound to 80/443, so it fronts novagate's sites too. The
+  # novagate stack must be up before this one, or caddy fails to start.
+  novagate-edge:
+    external: true
+
+volumes:
+  caddy_data:
+    driver: local
+  caddy_config:
+    driver: local
+  postgres_data:
+    driver: local
+  prom_data:
+    driver: local
+  grafana_data:
+    driver: local
+  rabbitmq_data:
+    driver: local
+  rabbitmq_logs:
+    driver: local
+  mongodb_data:
+    driver: local
+  redis_data:
+    driver: local
