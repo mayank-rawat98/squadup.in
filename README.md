@@ -1,124 +1,146 @@
-# SquadupIn
+# SquadUp
 
-<a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
+**Compete. Collaborate. Win together.**
 
-✨ Your new, shiny [Nx workspace](https://nx.dev) is ready ✨.
+SquadUp is a real-time platform where student developers code, compete and
+build together, alone or as a squad. Live at [squadup.in](https://squadup.in).
 
-[Learn more about this workspace setup and its capabilities](https://nx.dev/nx-api/node?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects) or run `npx nx graph` to visually explore what was created. Now, let's get you up to speed!
+AI can write most code today, which makes it easy to stop thinking for
+yourself. SquadUp is built around the opposite idea: **solve it with your own
+head**. All coding happens in the browser, inside a proctored environment, so
+what you build and win is genuinely yours.
+
+## What's in it
+
+- **Arenas.** Compete solo or as a team against other teams. Arenas are
+  proctored: tab and focus tracking, paste blocking, webcam and mic
+  monitoring, and keystroke analysis to catch copied or AI-generated code.
+- **Solo challenges.** Practice problems for learning at your own pace and
+  climbing the leaderboards.
+- **Coding board.** A shared workspace for coding with friends: a real-time
+  editor with live cursors, chat, voice channels, a whiteboard and a React
+  playground.
+- **Real rewards.** Winners get real 3D-printed products from the SquadUp
+  store, not just the usual swag, along with goodies like jackets and bottles.
+
+## Status
+
+SquadUp is in early development.
+
+| Area                                                                                                | State      |
+| --------------------------------------------------------------------------------------------------- | ---------- |
+| Landing page and design system                                                                      | Built      |
+| Accounts and security: passkeys, 2FA, Google sign-in, sessions                                      | Built      |
+| Platform: staff and admin, feature flags, blogs, changelog, notifications, audit logs, file storage | Built      |
+| Production infrastructure: Docker, Caddy, monitoring, CI/CD                                         | Built      |
+| Operations console                                                                                  | Scaffolded |
+| Arenas and proctoring                                                                               | Planned    |
+| Solo challenges and leaderboards                                                                    | Planned    |
+| Coding board: editor, chat, voice, whiteboard, playground                                           | Planned    |
+| Rewards store                                                                                       | Planned    |
+
+What's being built next, and how, is in [ROADMAP.md](ROADMAP.md).
+
+This repository is the whole platform: the API, the customer web app, the
+internal operations console, and the design system they share.
+
+## Stack
+
+| Layer          | Tech                                                       |
+| -------------- | ---------------------------------------------------------- |
+| Monorepo       | [Nx](https://nx.dev), npm workspaces, TypeScript (strict)  |
+| API            | NestJS 11, TypeORM + PostgreSQL, Redis, Socket.IO          |
+| Audit pipeline | RabbitMQ → MongoDB                                         |
+| File storage   | MinIO (S3-compatible)                                      |
+| Frontend       | Next.js 16 (App Router), React 19, Tailwind CSS v4, Motion |
+| Auth           | JWT, passkeys (WebAuthn), TOTP 2FA, Google sign-in         |
+| Ops            | Docker Compose, Caddy, Prometheus, Grafana, GitHub Actions |
 
 ## Projects
 
-| Project              | Path      | Dev port | What it is                              |
-| -------------------- | --------- | -------- | --------------------------------------- |
-| `@squadup.in/api`    | `apps/api`| 8080     | NestJS API                              |
-| `@squadup.in/web`    | `apps/web`| 3001     | Next.js customer app                    |
-| `@squadup.in/ops`    | `apps/ops`| 3002     | Next.js operations console              |
-| `@squadup.in/ui`     | `libs/ui` | —        | Shared design system used by web + ops  |
+| Project           | Path       | Dev port | What it is                             |
+| ----------------- | ---------- | -------- | -------------------------------------- |
+| `@squadup.in/api` | `apps/api` | 8080     | NestJS API                             |
+| `@squadup.in/web` | `apps/web` | 3001     | Next.js customer app                   |
+| `@squadup.in/ops` | `apps/ops` | 3002     | Next.js operations console             |
+| `@squadup.in/ui`  | `libs/ui`  | —        | Shared design system used by web + ops |
 
-Ports match `WEB_PORT` / `OPS_PORT` / `API_PORT` in `.env.local`, so web and ops
-can run side by side.
-
-Anything both apps render belongs in `libs/ui` — ESLint's
+Anything both apps render belongs in `libs/ui`. ESLint's
 `@nx/enforce-module-boundaries` blocks app-to-app imports, so sharing through
-the library is the only route.
+the library is the only route. See [libs/ui/README.md](libs/ui/README.md).
 
-## Run tasks
+## Getting started
+
+**Prerequisites:** Node.js 24, npm, and Docker with Compose.
+
+```sh
+git clone https://github.com/mayank-rawat98/squadup.in.git
+cd squadup.in
+npm install
+
+# 1. Configure. The defaults work as-is for local development.
+cp .env.example .env.local
+
+# 2. Start Postgres, Redis, MongoDB, RabbitMQ and MinIO in the background
+#    (waits until they're healthy). Stop them with `npm run docker:down`.
+npm run docker:up
+
+# 3. Create the database schema.
+npm run migration:run
+
+# 4. Run the apps (each in its own terminal).
+npx nx serve @squadup.in/api
+npx nx serve @squadup.in/web
+npx nx serve @squadup.in/ops
+```
+
+Then open:
+
+- Web app: <http://localhost:3001>
+- Ops console: <http://localhost:3002>
+- API docs (Swagger): <http://localhost:8080/api/docs>, log in with
+  `SWAGGER_USER` / `SWAGGER_PASSWORD`
+- RabbitMQ UI: <http://localhost:15672> · MinIO console: <http://localhost:9001>
+
+Email, Google sign-in, SMS 2FA and IP lookup call third-party services. Their
+keys are optional in `.env.example`; only those features fail without them.
+
+## Common tasks
 
 Every app uses the same target names:
 
 ```sh
-npx nx serve @squadup.in/web     # dev server with HMR (also picks up libs/ui edits)
-npx nx build @squadup.in/web     # production build
-npx nx start @squadup.in/web     # serve the production build
+npx nx serve @squadup.in/web       # dev server with HMR (also picks up libs/ui edits)
+npx nx build @squadup.in/web       # production build
 npx nx typecheck @squadup.in/web
 npx nx lint @squadup.in/web
 npx nx test @squadup.in/web
+
+npx nx run-many -t lint test typecheck   # everything, everywhere
 ```
 
-Run one target everywhere with `npx nx run-many -t lint test typecheck`.
-
-To create a production bundle:
+Database migrations:
 
 ```sh
-npx nx build api
+npm run migration:generate -- apps/api/src/database/migrations/<Name>
+npm run migration:run
+npm run migration:revert
+npm run migration:show
 ```
 
-To see all available targets to run for a project, run:
+## Deployment
 
-```sh
-npx nx show project api
-```
+Production runs as a single Docker Compose stack behind Caddy. See
+[compose.yml](compose.yml) for the list of variables `.env.production` must
+define, and [.github/workflows/deploy.prod.yml](.github/workflows/deploy.prod.yml)
+for the pipeline. Pushes to `main` build the images, run migrations and roll out.
 
-These targets are either [inferred automatically](https://nx.dev/concepts/inferred-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or defined in the `project.json` or `package.json` files.
+## Contributing
 
-[More about running tasks in the docs &raquo;](https://nx.dev/features/run-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) first. To
+report a security issue, follow [SECURITY.md](SECURITY.md) and do not open a
+public issue.
 
-## Add new projects
+## License
 
-While you could add new projects to your workspace manually, you might want to leverage [Nx plugins](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) and their [code generation](https://nx.dev/features/generate-code?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) feature.
-
-Use the plugin's generator to create new projects.
-
-To generate a new application, use:
-
-```sh
-npx nx g @nx/node:app demo
-```
-
-To generate a new library, use:
-
-```sh
-npx nx g @nx/node:lib mylib
-```
-
-You can use `npx nx list` to get a list of installed plugins. Then, run `npx nx list <plugin-name>` to learn about more specific capabilities of a particular plugin. Alternatively, [install Nx Console](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) to browse plugins and generators in your IDE.
-
-[Learn more about Nx plugins &raquo;](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) | [Browse the plugin registry &raquo;](https://nx.dev/plugin-registry?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Set up CI!
-
-### Step 1
-
-To connect to Nx Cloud, run the following command:
-
-```sh
-npx nx connect
-```
-
-Connecting to Nx Cloud ensures a [fast and scalable CI](https://nx.dev/ci/intro/why-nx-cloud?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) pipeline. It includes features such as:
-
-- [Remote caching](https://nx.dev/ci/features/remote-cache?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task distribution across multiple machines](https://nx.dev/ci/features/distribute-task-execution?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Automated e2e test splitting](https://nx.dev/ci/features/split-e2e-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task flakiness detection and rerunning](https://nx.dev/ci/features/flaky-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-### Step 2
-
-Use the following command to configure a CI workflow for your workspace:
-
-```sh
-npx nx g ci-workflow
-```
-
-[Learn more about Nx on CI](https://nx.dev/ci/intro/ci-with-nx#ready-get-started-with-your-provider?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Install Nx Console
-
-Nx Console is an editor extension that enriches your developer experience. It lets you run tasks, generate code, and improves code autocompletion in your IDE. It is available for VSCode and IntelliJ.
-
-[Install Nx Console &raquo;](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Useful links
-
-Learn more:
-
-- [Learn more about this workspace setup](https://nx.dev/nx-api/node?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects)
-- [Learn about Nx on CI](https://nx.dev/ci/intro/ci-with-nx?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Releasing Packages with Nx release](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [What are Nx plugins?](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-And join the Nx community:
-- [Discord](https://go.nx.dev/community)
-- [Follow us on X](https://twitter.com/nxdevtools) or [LinkedIn](https://www.linkedin.com/company/nrwl)
-- [Our Youtube channel](https://www.youtube.com/@nxdevtools)
-- [Our blog](https://nx.dev/blog?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+[MIT](LICENSE) © Mayank Rawat
