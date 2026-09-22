@@ -11,8 +11,14 @@ const config = {
     '^(?!.*\\.(js|jsx|ts|tsx|css|json)$)': '@nx/react/plugins/jest',
   },
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx'],
+  // The app-local `@/*` alias from tsconfig.json; the Nx resolver only knows
+  // the workspace paths in tsconfig.base.json.
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/src/$1',
+  },
   coverageDirectory: '../../coverage/apps/web',
   testEnvironment: 'jsdom',
+  setupFiles: ['<rootDir>/jest.setup.ts'],
 };
 
 const jestConfig = createJestConfig(config);
