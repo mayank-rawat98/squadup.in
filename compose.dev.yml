@@ -1,0 +1,151 @@
+name: squadup-compose-dev
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: squadup-postgres
+    restart: unless-stopped
+    profiles:
+      - development
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  minio:
+    image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
+    container_name: squadup-minio
+    profiles:
+      - development
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+    ports:
+      - '${MINIO_PORT:-9000}:9000'
+      - '${MINIO_CONSOLE_PORT:-9001}:9001'
+    volumes:
+      - ./minio_data:/data
+    command: server /data --console-address ":9001"
+
+  redis:
+    image: redis:7-alpine
+    container_name: squadup-redis
+    profiles:
+      - development
+    ports:
+      - '${REDIS_PORT:-6379}:6379'
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_USERNAME=${REDIS_USERNAME}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # --- BACKUP SERVICE ---
+  # backup-worker:
+  #   container_name: squadup-backup-worker
+  #   build:
+  #     context: .
+  #     dockerfile: ./docker/workers/backup-worker/Dockerfile
+  #   profiles:
+  #     - development
+  #   restart: unless-stopped
+  #   env_file:
+  #     - .env.local
+  #   environment:
+  #     # Explicitly tell the script where to find the database
+  #     - POSTGRES_HOST=postgres
+  #     # Pass through DB credentials (ensure these are in .env.local)
+  #     - POSTGRES_USER=${POSTGRES_USER}
+  #     - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+  #     - POSTGRES_DB=${POSTGRES_DB}
+  #     # Pass through Spaces/AWS credentials (ensure these are in .env.local)
+
+  #     - AWS_DEFAULT_REGION=${S3_REGION} # Adjust to match your .env var name
+  #     - AWS_ACCESS_KEY_ID=${S3_ACCESS_KEY_ID} # Adjust to match your .env var name
+  #     - AWS_SECRET_ACCESS_KEY=${S3_SPACES_SECRET} # Adjust to match your .env var name
+  #     - SPACES_BUCKET=${S3_BACKUP_BUCKET}
+  #     - SPACES_ENDPOINT=${S3_ENDPOINT}
+  #     - S3_RETENTION_DAYS=${S3_RETENTION_DAYS}
+  #   volumes:
+  #     # 1. MOUNT MINIO DATA (Read-Only) - Critical for file backup
+  #     - ./minio_data:/data_to_backup
+  #     # 2. Local storage for logs/temp backups (Optional)
+  #     - ./backup_data:/backups
+  #   depends_on:
+  #     minio:
+  #       condition: service_started
+  #     # postgres:
+  #     #   condition: service_healthy
+  #   networks:
+  #     - mailnet
+
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: squadup-rabbitmq
+    profiles:
+      - development
+    ports:
+      - '${RABBITMQ_AMQP_PORT:-5672}:5672' # AMQP port
+      - '${RABBITMQ_MANAGEMENT_PORT:-15672}:15672' # Management UI
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}
+      - RABBITMQ_DEFAULT_VHOST=${RABBITMQ_DEFAULT_VHOST}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+      - rabbitmq_logs:/var/log/rabbitmq
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mongodb:
+    image: mongo:7.0
+    container_name: squadup-mongodb
+    profiles:
+      - development
+    ports:
+      - '${MONGO_PORT:-27017}:27017'
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
+      - MONGO_INITDB_DATABASE=${MONGO_INITDB_DATABASE}
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: ['CMD', 'mongosh', '--eval', "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  postgres_data:
+    driver: local
+  rabbitmq_data:
+    driver: local
+  rabbitmq_logs:
+    driver: local
+  mongodb_data:
+    driver: local
+  redis_data:
+    driver: local
