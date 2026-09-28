@@ -8,3 +8,7 @@ export { default as PasswordInput } from './PasswordInput';
 export type { PasswordInputProps } from './PasswordInput';
 export { default as SectionHeading } from './SectionHeading';
 export type { SectionHeadingProps } from './SectionHeading';
+export { default as Drawer } from './Drawer';
+export type { DrawerProps } from './Drawer';
+export { default as Popover } from './Popover';
+export type { PopoverProps, PopoverTriggerProps } from './Popover';
