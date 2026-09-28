@@ -55,3 +55,14 @@ export function signInWithGoogle(
     body: payload,
   });
 }
+
+/**
+ * Confirms the address from the emailed link. The API expects the email
+ * URL-encoded, as it was in the link (`encodedEmail`).
+ */
+export async function verifyEmail(token: string, email: string): Promise<void> {
+  await apiClient.request<null>('/auth/verify-email', {
+    method: 'POST',
+    body: { token, encodedEmail: encodeURIComponent(email) },
+  });
+}
