@@ -1,0 +1,4 @@
+# Lint, typecheck, test and build every project this branch touched, measured
+# against dev (the PR target). CI still runs everything.
+git fetch --quiet origin dev || echo "pre-push: could not fetch origin/dev; comparing against the local copy"
+npm run check:affected
