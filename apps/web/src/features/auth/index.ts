@@ -3,7 +3,9 @@ export {
   login,
   logout,
   register,
+  requestPasswordReset,
   resendVerificationEmail,
+  resetPassword,
   selectTwoFactorMethod,
   signInWithGoogle,
   verifyEmail,
@@ -13,6 +15,7 @@ export { default as AuthFormHeader } from './components/AuthFormHeader';
 export type { AuthFormHeaderProps } from './components/AuthFormHeader';
 export { default as AuthShell } from './components/AuthShell';
 export { default as CheckInboxPanel } from './components/CheckInboxPanel';
+export { default as ForgotPasswordView } from './components/ForgotPasswordView';
 export { default as GoogleSignInButton } from './components/GoogleSignInButton';
 export { default as GuestOnly } from './components/GuestOnly';
 export { default as LoginForm } from './components/LoginForm';
