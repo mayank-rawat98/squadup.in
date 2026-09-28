@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ApiError } from '@/lib/api/api-error';
 import { getSession, takePendingRememberMe } from '@/lib/auth';
 import { resetSessionStoreForTests } from '@/lib/auth/session-store';
-import { login } from '../api/auth.api';
+import { login, selectTwoFactorMethod } from '../api/auth.api';
 import { readTwoFactorMethods } from '../utils/two-factor-methods';
 import LoginForm from './LoginForm';
 
@@ -14,9 +14,11 @@ jest.mock('next/navigation', () => ({
 jest.mock('../api/auth.api', () => ({
   login: jest.fn(),
   signInWithGoogle: jest.fn(),
+  selectTwoFactorMethod: jest.fn(),
 }));
 
 const loginMock = jest.mocked(login);
+const selectMock = jest.mocked(selectTwoFactorMethod);
 
 const USER = {
   id: 'u1',
@@ -53,6 +55,7 @@ async function signIn({ remember }: { remember: boolean }) {
 describe('LoginForm', () => {
   beforeEach(() => {
     loginMock.mockReset();
+    selectMock.mockReset();
     push.mockReset();
     window.localStorage.clear();
     window.sessionStorage.clear();
@@ -82,6 +85,7 @@ describe('LoginForm', () => {
   });
 
   it('never starts a session when a second factor is required', async () => {
+    selectMock.mockResolvedValue(undefined);
     loginMock.mockResolvedValue({
       requiresTwoFactor: true,
       availableMethods: [
@@ -97,6 +101,21 @@ describe('LoginForm', () => {
     expect(getSession()).toBeNull();
     expect(readTwoFactorMethods()).toEqual(['authenticator', 'backupCode']);
     expect(takePendingRememberMe()).toBe(true);
+    expect(selectMock).toHaveBeenCalledWith('authenticator');
+    expect(push).toHaveBeenCalledWith('/auth/2fa/verify?method=authenticator');
+  });
+
+  it('falls back to the method chooser when selecting the default fails', async () => {
+    selectMock.mockRejectedValue(new ApiError('Something went wrong', 500));
+    loginMock.mockResolvedValue({
+      requiresTwoFactor: true,
+      availableMethods: [{ method: 'email', preference: 2 }],
+    });
+    renderForm();
+
+    await signIn({ remember: false });
+
+    expect(selectMock).toHaveBeenCalledWith('email');
     expect(push).toHaveBeenCalledWith('/auth/2fa');
   });
 

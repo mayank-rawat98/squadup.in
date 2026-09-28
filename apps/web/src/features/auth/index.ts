@@ -4,8 +4,10 @@ export {
   logout,
   register,
   resendVerificationEmail,
+  selectTwoFactorMethod,
   signInWithGoogle,
   verifyEmail,
+  verifyTwoFactor,
 } from './api/auth.api';
 export { default as AuthFormHeader } from './components/AuthFormHeader';
 export type { AuthFormHeaderProps } from './components/AuthFormHeader';
@@ -18,6 +20,8 @@ export { default as PageLoader } from './components/PageLoader';
 export { default as RegisterForm } from './components/RegisterForm';
 export { default as RequireAuth } from './components/RequireAuth';
 export { default as ResendVerificationForm } from './components/ResendVerificationForm';
+export { default as TwoFactorChooser } from './components/TwoFactorChooser';
+export { default as TwoFactorVerify } from './components/TwoFactorVerify';
 export { default as UnverifiedEmailBanner } from './components/UnverifiedEmailBanner';
 export { default as VerifyEmailView } from './components/VerifyEmailView';
 export { default as ResendVerificationButton } from './components/ResendVerificationButton';

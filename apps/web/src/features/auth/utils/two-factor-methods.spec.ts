@@ -1,5 +1,6 @@
 import {
   clearTwoFactorMethods,
+  defaultTwoFactorMethod,
   readTwoFactorMethods,
   requiresTwoFactor,
   storeTwoFactorMethods,
@@ -59,5 +60,16 @@ describe('stored methods', () => {
       JSON.stringify(['email', 'sms', 42]),
     );
     expect(readTwoFactorMethods()).toEqual(['email']);
+  });
+});
+
+describe('defaultTwoFactorMethod', () => {
+  it('prefers the authenticator app, then email, and never picks backup codes', () => {
+    expect(
+      defaultTwoFactorMethod(['authenticator', 'email', 'backupCode']),
+    ).toBe('authenticator');
+    expect(defaultTwoFactorMethod(['email', 'backupCode'])).toBe('email');
+    expect(defaultTwoFactorMethod(['backupCode'])).toBeNull();
+    expect(defaultTwoFactorMethod([])).toBeNull();
   });
 });

@@ -81,3 +81,19 @@ export function clearTwoFactorMethods(): void {
     /* nothing to clear */
   }
 }
+
+/**
+ * The method sign-in starts with: the authenticator app if it's on (no email
+ * to wait for), else an email code. Backup codes are only ever chosen.
+ */
+export function defaultTwoFactorMethod(
+  methods: readonly SupportedTwoFactorMethod[],
+): SupportedTwoFactorMethod | null {
+  if (methods.includes('authenticator')) return 'authenticator';
+  if (methods.includes('email')) return 'email';
+  return null;
+}
+
+export function twoFactorVerifyHref(method: SupportedTwoFactorMethod): string {
+  return `/auth/2fa/verify?method=${method}`;
+}
