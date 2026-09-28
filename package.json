@@ -2,13 +2,23 @@
   "name": "@squadup.in/source",
   "version": "0.0.0",
   "license": "MIT",
+  "engines": {
+    "node": ">=24.0.0",
+    "npm": ">=11.0.0"
+  },
   "scripts": {
-    "docker:up": "docker-compose -f compose.dev.yml --env-file .env.local --profile development up --build --watch",
+    "docker:up": "docker compose -f compose.dev.yml --env-file .env.local --profile development up -d --wait",
+    "docker:down": "docker compose -f compose.dev.yml --env-file .env.local --profile development down",
     "typeorm": "TS_NODE_PROJECT=apps/api/tsconfig.migrations.json TS_NODE_TRANSPILE_ONLY=true typeorm-ts-node-commonjs -d apps/api/src/database/data-source.ts",
     "migration:run": "npm run typeorm -- migration:run",
     "migration:revert": "npm run typeorm -- migration:revert",
     "migration:show": "npm run typeorm -- migration:show",
-    "migration:generate": "npm run typeorm -- migration:generate"
+    "migration:generate": "npm run typeorm -- migration:generate",
+    "check": "nx run-many -t lint typecheck test build",
+    "check:affected": "nx affected -t lint typecheck test build --base=origin/dev --head=HEAD",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prepare": "husky || true"
   },
   "private": true,
   "dependencies": {
@@ -60,6 +70,8 @@
     "uuid": "^11.1.1"
   },
   "devDependencies": {
+    "@commitlint/cli": "^20.5.3",
+    "@commitlint/config-conventional": "^20.5.3",
     "@eslint/js": "^9.8.0",
     "@nestjs/schematics": "^11.0.0",
     "@nestjs/testing": "^11.0.0",
@@ -103,10 +115,12 @@
     "eslint-plugin-jsx-a11y": "6.10.1",
     "eslint-plugin-react": "^7.35.0",
     "eslint-plugin-react-hooks": "5.0.0",
+    "husky": "^9.1.7",
     "jest": "~30.3.0",
     "jest-environment-jsdom": "~30.3.0",
     "jest-environment-node": "~30.3.0",
     "jest-util": "~30.3.0",
+    "lint-staged": "^16.4.0",
     "nx": "23.1.1",
     "prettier": "~3.6.2",
     "tailwindcss": "^4.3.3",

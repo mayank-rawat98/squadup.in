@@ -4,7 +4,7 @@
  * Both apps import this and nothing else, so web and ops cannot drift:
  *   import '@squadup.in/ui/styles.css';
  *
- * Structure mirrors the system used across the other regiment repos:
+ * Structure:
  *   1. semantic HSL triplets declared once in `@layer base`
  *   2. surfaced to Tailwind through `@theme` as `--color-*: hsl(var(--*))`
  *   3. two independent type scales — product chrome and marketing display

@@ -16,9 +16,7 @@ node_modules
 *.launch
 .settings/
 *.sublime-workspace
-.env.local
 minio_data
-compose.dev.yml
 # IDE - VSCode
 .vscode/*
 !.vscode/settings.json
@@ -54,5 +52,7 @@ out
 # Compiled TypeORM migrations (built inside the API image)
 dist-migrations
 
-# Written on the server by the deploy workflow; never committed
-.env.production
+# Environment files hold real secrets. Only the template is committed.
+.env
+.env.*
+!.env.example

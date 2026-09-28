@@ -46,3 +46,37 @@ describe('UsersService.registerUser', () => {
     expect(result.acceptedTermsAt).toBeInstanceOf(Date);
   });
 });
+
+describe('UsersService.sendEmailVerificationLink', () => {
+  it.each(['user@example.com', 'user+signup@example.com'])(
+    'links %s to the auth verification page without losing query values',
+    async (email) => {
+      const notifyUserByEmail = jest.fn().mockResolvedValue(true);
+      const service = new UsersService(
+        {
+          findByEmail: jest
+            .fn()
+            .mockResolvedValue({ email, emailVerified: false }),
+        } as never,
+        { notifyUserByEmail } as never,
+        {
+          generateEmailFingerprint: jest.fn().mockResolvedValue('test-token'),
+        } as never,
+        {} as never,
+        {} as never,
+        {} as never,
+        {} as never,
+      );
+
+      await service.sendEmailVerificationLink(email);
+
+      expect(notifyUserByEmail).toHaveBeenCalledTimes(1);
+      const message = notifyUserByEmail.mock.calls[0][0];
+      expect(message.recipient).toBe(email);
+      const url = new URL(message.emailData.url);
+      expect(url.pathname).toBe('/auth/verify-email');
+      expect(url.searchParams.get('token')).toBe('test-token');
+      expect(url.searchParams.get('email')).toBe(email);
+    },
+  );
+});

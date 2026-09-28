@@ -1,8 +1,9 @@
 import Link from 'next/link';
 import { Container, Typography } from '@squadup.in/ui';
 import Logo from '@/components/atoms/Logo';
-import { SOCIAL_ICONS } from '@/components/atoms/BrandIcons';
+import { GithubIcon, SOCIAL_ICONS } from '@/components/atoms/BrandIcons';
 import { FOOTER_COLUMNS, SOCIAL_LINKS } from '@/config/navigation';
+import { OPEN_SOURCE_PATH, REPOSITORY_LINKS } from '@/config/repository';
 
 /*
  * Five columns on desktop, stacked on mobile.
@@ -10,6 +11,9 @@ import { FOOTER_COLUMNS, SOCIAL_LINKS } from '@/config/navigation';
  * No newsletter block. The brief says to add one only if updates will actually
  * be sent, and a form with no endpoint behind it is worse than no form. Drop
  * it in here once /forms/newsletter exists.
+ *
+ * An open-source strip sits above the copyright line: the code is public
+ * under MIT, and a developer reading the footer is exactly who might help.
  *
  * Links flagged `comingSoon` render as plain text. They stay visible so the
  * shape of the product is legible, but nothing navigates to a route that is
@@ -90,6 +94,36 @@ function SiteFooter() {
               </ul>
             </div>
           ))}
+        </div>
+
+        <div className="border-border flex flex-col gap-4 border-t py-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3 sm:items-center">
+            <GithubIcon className="text-foreground mt-0.5 h-5 w-5 shrink-0 sm:mt-0" />
+            <Typography variant="bodySmall" className="text-muted-foreground">
+              <span className="text-foreground font-medium">
+                SquadUp is open source.
+              </span>{' '}
+              The code is on GitHub under the MIT licence, and contributions are
+              welcome.
+            </Typography>
+          </div>
+          <div className="flex shrink-0 flex-wrap items-center gap-x-5 gap-y-2">
+            <a
+              href={REPOSITORY_LINKS.repository}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="text-primary focus-visible:ring-ring rounded-sm text-body-sm font-medium underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:outline-none"
+            >
+              Star on GitHub
+              <span className="sr-only"> (opens in a new tab)</span>
+            </a>
+            <Link
+              href={OPEN_SOURCE_PATH}
+              className="text-primary focus-visible:ring-ring rounded-sm text-body-sm font-medium underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:outline-none"
+            >
+              How to contribute
+            </Link>
+          </div>
         </div>
 
         <div className="border-border flex flex-col items-center justify-between gap-4 border-t py-6 sm:flex-row">
