@@ -2,6 +2,7 @@ import type {
   FooterColumn,
   NavItem,
 } from '@/features/landing/types/landing.types';
+import { REPOSITORY_URL } from './repository';
 
 /*
  * Site chrome navigation. Lives in config rather than in the landing feature
@@ -51,6 +52,7 @@ export const FOOTER_COLUMNS: FooterColumn[] = [
     title: 'Community',
     links: [
       { label: 'Community', href: '/communities' },
+      { label: 'Contribute', href: '/open-source' },
       { label: 'Discord', href: '/discord' },
       { label: 'Events', href: '/events' },
       { label: 'College Chapters', href: '/chapters', comingSoon: true },
@@ -77,7 +79,7 @@ export const AUTH_LINKS = {
 } as const;
 
 export const SOCIAL_LINKS = [
-  { label: 'GitHub', href: 'https://github.com/squadup-in' },
+  { label: 'GitHub', href: REPOSITORY_URL },
   { label: 'Discord', href: '/discord' },
   { label: 'X', href: 'https://x.com/squadup_in' },
   { label: 'LinkedIn', href: 'https://linkedin.com/company/squadup-in' },
