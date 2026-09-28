@@ -3,6 +3,7 @@ import type {
   EmailChangeRequest,
   PendingEmailChange,
   UserDevice,
+  UsernameAvailability,
 } from '../types/account.types';
 
 /*
@@ -11,8 +12,20 @@ import type {
  * reached from a link in an email.
  */
 
-export async function updateProfile(values: { fullName: string }) {
+export async function updateProfile(
+  values: { fullName: string } | { username: string },
+) {
   await apiClient.request('/users', { method: 'PATCH', body: values });
+}
+
+export function checkUsername(
+  username: string,
+  signal?: AbortSignal,
+): Promise<UsernameAvailability> {
+  return apiClient.request<UsernameAvailability>(
+    `/users/username-availability?username=${encodeURIComponent(username)}`,
+    { signal },
+  );
 }
 
 /** Uploads a new avatar and resolves with its URL. */

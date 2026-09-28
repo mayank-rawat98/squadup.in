@@ -33,6 +33,8 @@ export interface CurrentUser {
   id: string;
   email: string;
   fullName?: string | null;
+  /** Public handle for /u/<username>; null until the user picks one. */
+  username?: string | null;
   avatarUrl?: string | null;
   emailVerified: boolean;
   accountStatus: AccountStatus;

@@ -1,6 +1,10 @@
 import { z } from 'zod';
 import { emailSchema, newPasswordSchema } from '@/features/auth';
-import { FULL_NAME_MAX_LENGTH } from '../constants/account.constant';
+import {
+  FULL_NAME_MAX_LENGTH,
+  USERNAME_PATTERN,
+  USERNAME_RULES,
+} from '../constants/account.constant';
 
 /* Mirror the API's DTOs. The API validates again regardless. */
 
@@ -66,3 +70,14 @@ export function emailChangeSchema(proof: {
 export type EmailChangeFormValues = z.infer<
   ReturnType<typeof emailChangeSchema>
 >;
+
+/* Lowercased like the API does, so what's checked is what gets saved. */
+export const usernameSchema = z.object({
+  username: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .min(1, 'Enter a username.')
+    .regex(USERNAME_PATTERN, `Use ${USERNAME_RULES}`),
+});
+export type UsernameFormValues = z.infer<typeof usernameSchema>;
