@@ -51,6 +51,7 @@ export const FOOTER_COLUMNS: FooterColumn[] = [
     title: 'Community',
     links: [
       { label: 'Community', href: '/communities' },
+      { label: 'Contribute', href: '/open-source' },
       { label: 'Discord', href: '/discord' },
       { label: 'Events', href: '/events' },
       { label: 'College Chapters', href: '/chapters', comingSoon: true },
