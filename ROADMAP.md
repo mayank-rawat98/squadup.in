@@ -290,9 +290,8 @@ on the next sign-in; and turning off the last method removes the prompt.
 
 ### 1.9 Known issues to fix in this milestone
 
-- ⬜ `apps/api/src/users/users.service.ts` builds the verification link as
-  `/verify-email?...` without the `/auth` prefix, so it doesn't match
-  `auth.service.ts` or the route above. Change it to `/auth/verify-email`.
+- ✅ `apps/api/src/users/users.service.ts` builds the verification link as
+  `/auth/verify-email?...`, matching `auth.service.ts` and the route above.
 - ⬜ `VerifiedEmailGuard` exists but isn't applied to any route. Decide which
   actions require a verified email (at least joining arenas and redeeming
   rewards) and apply it there when those features land.

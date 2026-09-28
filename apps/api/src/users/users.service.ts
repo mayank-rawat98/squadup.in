@@ -552,7 +552,7 @@ export class UsersService {
         user.email,
       );
 
-    const url = `${normalizeUrl(clientUrl)}/verify-email?token=${verificationToken}&email=${encodeURIComponent(user.email)}`;
+    const url = `${normalizeUrl(clientUrl)}/auth/verify-email?token=${verificationToken}&email=${encodeURIComponent(user.email)}`;
 
     const isMailSent = await this.mailerService.notifyUserByEmail({
       recipient: user.email,
