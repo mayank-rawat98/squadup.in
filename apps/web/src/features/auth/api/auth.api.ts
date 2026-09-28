@@ -66,3 +66,20 @@ export async function verifyEmail(token: string, email: string): Promise<void> {
     body: { token, encodedEmail: encodeURIComponent(email) },
   });
 }
+
+export interface LoginPayload {
+  email: string;
+  password: string;
+  rememberMe: boolean;
+}
+
+/**
+ * Signs in with a password. With 2FA on, the API answers with the methods to
+ * choose from and sets an HttpOnly `2fa_session` cookie instead of a session.
+ */
+export function login(payload: LoginPayload): Promise<SignInResponse> {
+  return apiClient.request<SignInResponse>('/auth/login', {
+    method: 'POST',
+    body: payload,
+  });
+}
