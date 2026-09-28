@@ -9,3 +9,8 @@ import type { CurrentUser } from '../types/auth.types';
 export function getCurrentUser(signal?: AbortSignal): Promise<CurrentUser> {
   return apiClient.request<CurrentUser>('/auth/me', { signal });
 }
+
+/** Ends this device's session and clears the refresh cookie. */
+export async function logout(): Promise<void> {
+  await apiClient.request<null>('/auth/logout', { method: 'POST' });
+}

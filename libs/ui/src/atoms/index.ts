@@ -24,6 +24,8 @@ export { default as OtpInput } from './OtpInput';
 export type { OtpInputProps } from './OtpInput';
 export { default as Section } from './Section';
 export type { SectionProps } from './Section';
+export { default as Spinner } from './Spinner';
+export type { SpinnerProps } from './Spinner';
 export { default as Typography } from './Typography';
 export type { TypographyVariant } from './Typography';
 export { default as Toaster } from './Toaster';
