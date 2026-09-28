@@ -39,11 +39,28 @@ import { Button, cn } from '@squadup.in/ui';
 - Interactive components need the `'use client'` directive: both consumers are
   Next.js App Router apps that render server-side by default.
 
+## Forms
+
+Fields are built from `Input`, `PasswordInput`, `Checkbox`, `OtpInput`,
+`Label` and `FieldError`. `FormField` puts a label, a control, a hint and an
+error together and hands the control its `id`, `aria-invalid` and
+`aria-describedby`, so the error is announced and read again on focus:
+
+```tsx
+<FormField id="email" label="Email" error={errors.email?.message} required>
+  {(control) => <Input {...control} type="email" {...register('email')} />}
+</FormField>
+```
+
+Toasts: mount `<Toaster />` once in a layout, then call `toast.success(...)`
+or `toast.error(...)`, both imported from this package.
+
 ## Checks
 
 ```
 npx nx build @squadup.in/ui      # tsc --build (declarations only)
 npx nx lint @squadup.in/ui
+npx nx test @squadup.in/ui       # Jest + Testing Library, jsdom
 ```
 
 `nx build` and `nx dev` on either app build this library first, so you rarely

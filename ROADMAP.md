@@ -114,10 +114,10 @@ returns them as available methods.
 
 Do these first; every page depends on them.
 
-- ⬜ **Dependencies.** Add `zod`, `react-hook-form`,
+- ✅ **Dependencies.** Add `zod`, `react-hook-form`,
   `@hookform/resolvers`, `input-otp` and `sonner` (toasts). For server state,
   use `@tanstack/react-query`. Don't add Redux.
-- ⬜ **Form components in `libs/ui`.** `Input`, `PasswordInput` (show/hide
+- ✅ **Form components in `libs/ui`.** `Input`, `PasswordInput` (show/hide
   toggle), `Label`, `Checkbox`, `FieldError`, `OtpInput` (6 slots, digits
   only, auto-focus, paste support, built on `input-otp`) and `Toaster`. Follow
   the atoms/molecules split and export them from the package index.
