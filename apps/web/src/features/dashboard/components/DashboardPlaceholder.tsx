@@ -14,7 +14,9 @@ export default function DashboardPlaceholder() {
 
   return (
     <div className="flex flex-col gap-8">
-      <Typography as="h1" variant="h3">
+      {/* The fallback name is an email address, one long word that would
+          otherwise push the page wider than a phone. */}
+      <Typography as="h1" variant="h3" className="wrap-anywhere">
         {name ? `Welcome, ${name}` : 'Welcome'}
       </Typography>
       <EmptyState
