@@ -146,9 +146,25 @@ Formatting is Prettier (`.prettierrc`), and line endings are LF (`.gitattributes
 **Pull requests:**
 
 - Feature branches merge into `dev`, and `dev` merges into `main`. Never commit directly to `main`.
-- The PR title matches the issue title. The body links the issue with `Closes #<n>`, or `Refs #<n>` if the PR only partly addresses it.
+- **Every PR is attached to its issue.** The title matches the issue title, and the body links the issue with `Closes #<n>`, or `Refs #<n>` if the PR only partly addresses it. No issue, no PR: open one first (§3).
+- **Assign the PR to yourself.** You own it until it merges: answering review, fixing CI, keeping it up to date with `dev`.
+- **Request a reviewer.** A PR merges only after a review from a maintainer.
 - Fill in the PR template: what changed, why, how you verified it, screenshots for UI, and a rollback plan for DB or infra changes.
 - Keep it focused: one concern per PR. Note unrelated clean-ups as follow-up issues instead of bundling them in.
+
+Most of that is automatic:
+
+| Rule                        | Done by                                                                                                                                          |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Assigned to its author      | `.github/workflows/pr-hygiene.yml`, when the PR opens                                                                                            |
+| Reviewer requested          | `.github/CODEOWNERS`: GitHub asks the code owners for a review when the PR opens                                                                 |
+| Issue linked, title correct | `pr-hygiene.yml` fails the PR until the title is `type(scope): summary` and the body has `Closes #<n>` (it suggests the number from your branch) |
+
+Maintainers opening PRs from the command line can do all three at once:
+
+```sh
+gh pr create --base dev --assignee @me --reviewer <reviewer> --title "feat(web): sign-in page" --body "Closes #12"
+```
 
 ### Other conventions
 

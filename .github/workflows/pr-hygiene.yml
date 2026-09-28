@@ -1,0 +1,78 @@
+name: PR hygiene
+
+# Enforces the pull request rules in CONTRIBUTING.md §5:
+#   - the author is assigned to their own PR,
+#   - the title is a Conventional Commit header,
+#   - the body links its issue with Closes/Fixes/Resolves/Refs #<n>.
+# Reviewers are requested by .github/CODEOWNERS, not here.
+#
+# pull_request_target, so it can also assign on PRs from forks, where a
+# pull_request token is read-only. That is safe only because this workflow
+# never checks out or runs the PR's code: it reads the event payload and
+# calls the GitHub API. Keep it that way. Untrusted values (title, body,
+# branch) reach the shell through env, never through ${{ }} in a script.
+on:
+  pull_request_target:
+    types: [opened, reopened, edited, synchronize, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: pr-hygiene-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  assign-author:
+    if: github.event.action == 'opened' || github.event.action == 'reopened'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Assign the author
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          AUTHOR: ${{ github.event.pull_request.user.login }}
+          AUTHOR_TYPE: ${{ github.event.pull_request.user.type }}
+          ASSIGNEES: ${{ toJSON(github.event.pull_request.assignees) }}
+        run: |
+          if [ "$AUTHOR_TYPE" = "Bot" ]; then echo "Bot author, skipping."; exit 0; fi
+          if [ "$(echo "$ASSIGNEES" | jq length)" -gt 0 ]; then echo "Already assigned."; exit 0; fi
+          # GitHub may refuse to assign someone without access to the repo.
+          # That shouldn't fail the PR, so it is only a warning.
+          gh pr edit "$PR" --add-assignee "$AUTHOR" \
+            || echo "::warning::Could not assign @$AUTHOR. A maintainer can assign them by hand."
+
+  conventions:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check title and linked issue
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+          BODY: ${{ github.event.pull_request.body }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          AUTHOR_TYPE: ${{ github.event.pull_request.user.type }}
+        run: |
+          # Release PRs (dev → main) and bot PRs carry no issue of their own.
+          if [ "$AUTHOR_TYPE" = "Bot" ] || { [ "$HEAD_REF" = "dev" ] && [ "$BASE_REF" = "main" ]; }; then
+            echo "Release or bot PR, skipping."; exit 0
+          fi
+
+          failed=0
+          types='feat|fix|security|perf|refactor|chore|build|ci|test|docs|style|revert'
+          if ! printf '%s' "$TITLE" | grep -Eq "^($types)(\([a-z0-9,-]+\))?!?: .+"; then
+            echo "::error::The title must look like 'type(scope): summary' and match its issue (CONTRIBUTING.md §1). Got: $TITLE"
+            failed=1
+          fi
+
+          if ! printf '%s' "$BODY" | grep -Eiq "\b(close[sd]?|fix(e[sd])?|resolve[sd]?|refs) +#[0-9]+"; then
+            hint=""
+            issue=$(printf '%s' "$HEAD_REF" | sed -nE 's#^[a-z]+/([0-9]+)-.*#\1#p')
+            [ -n "$issue" ] && hint=" This branch is for #$issue, so add 'Closes #$issue'."
+            echo "::error::The description must link its issue with 'Closes #<n>', or 'Refs #<n>' for partial work (CONTRIBUTING.md §5).$hint"
+            failed=1
+          fi
+
+          exit $failed

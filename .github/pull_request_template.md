@@ -2,6 +2,8 @@
 
 Closes #
 
+<!-- Required: the issue this PR belongs to. Use "Refs #" for partial work. The PR is assigned to you and a reviewer is requested automatically. -->
+
 ## What
 
 <!-- What changed, in a few bullets. -->
