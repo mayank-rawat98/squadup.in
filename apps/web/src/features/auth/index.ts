@@ -2,6 +2,7 @@ export {
   getCurrentUser,
   login,
   logout,
+  logoutAll,
   register,
   requestPasswordReset,
   resendVerificationEmail,
@@ -48,3 +49,8 @@ export type {
   TwoFactorRequiredResponse,
   UserSettings,
 } from './types/auth.types';
+export {
+  PASSWORD_MIN_LENGTH,
+  emailSchema,
+  newPasswordSchema,
+} from './schemas/auth.schema';

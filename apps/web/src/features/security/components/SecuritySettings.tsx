@@ -18,7 +18,7 @@ export default function SecuritySettings() {
   if (!user) return null;
 
   return (
-    <div className="flex max-w-3xl flex-col gap-8">
+    <div className="flex flex-col gap-8">
       <header className="flex flex-col gap-2">
         <Typography as="h1" variant="h3">
           Security

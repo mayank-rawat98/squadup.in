@@ -34,7 +34,7 @@ type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
 export interface RequestOptions {
   method?: HttpMethod;
-  /** Serialised as JSON. */
+  /** Serialised as JSON, except FormData, which is sent as multipart as is. */
   body?: unknown;
   headers?: Record<string, string>;
   signal?: AbortSignal;
@@ -76,6 +76,15 @@ function messageFrom(body: unknown): string | null {
   return null;
 }
 
+function isFormData(body: unknown): body is FormData {
+  return typeof FormData !== 'undefined' && body instanceof FormData;
+}
+
+function serialiseBody(body: unknown): BodyInit | undefined {
+  if (body === undefined) return undefined;
+  return isFormData(body) ? body : JSON.stringify(body);
+}
+
 async function readBody(response: Response): Promise<unknown> {
   if (response.status === 204) return null;
   const text = await response.text();
@@ -101,7 +110,8 @@ export function createApiClient({
       [APP_ORIGIN_HEADER]: APP_ORIGIN,
       ...options.headers,
     };
-    if (options.body !== undefined)
+    // The browser sets the multipart Content-Type, boundary included.
+    if (options.body !== undefined && !isFormData(options.body))
       headers['Content-Type'] = 'application/json';
 
     const accessToken = session.getAccessToken();
@@ -122,8 +132,7 @@ export function createApiClient({
       const response = await fetchImpl(url, {
         method: options.method ?? 'GET',
         headers,
-        body:
-          options.body === undefined ? undefined : JSON.stringify(options.body),
+        body: serialiseBody(options.body),
         credentials: 'include',
         signal: options.signal,
       });

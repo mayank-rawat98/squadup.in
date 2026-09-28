@@ -37,6 +37,8 @@ export interface CurrentUser {
   emailVerified: boolean;
   accountStatus: AccountStatus;
   mustChangePassword: boolean;
+  /** False for accounts created with Google that never set a password. */
+  isPasswordSet?: boolean;
   settings?: UserSettings | null;
 }
 
