@@ -64,7 +64,7 @@ function Drawer({
         if (event.target === event.currentTarget) onClose();
       }}
       className={cn(
-        'bg-background text-foreground border-border fixed inset-y-0 m-0 h-dvh max-h-dvh w-[min(20rem,85vw)] max-w-none overflow-y-auto p-0 shadow-5 backdrop:bg-foreground/40',
+        'bg-background text-foreground border-border fixed inset-y-0 m-0 h-dvh max-h-dvh w-[min(20rem,85vw)] max-w-none overflow-y-auto p-0 shadow-5 backdrop:bg-overlay/60',
         side === 'left' ? 'left-0 border-r' : 'right-0 left-auto border-l',
         className,
       )}
