@@ -141,6 +141,8 @@ export class AppModule implements NestModule {
         { path: 'v1/users/forgot-password', method: RequestMethod.POST },
         { path: 'v1/users/send-email-link', method: RequestMethod.POST },
         { path: 'v1/users/verify-email-link', method: RequestMethod.POST },
+        // Public profiles are open to anyone; the handler is @Public() too.
+        { path: 'v1/users/public/:username', method: RequestMethod.GET },
         { path: 'v1/auth/verify-email', method: RequestMethod.POST },
         // Public invite endpoints — the invitee isn't logged in yet. Note this
         // does NOT match 'invite/accept-existing', which stays authenticated.

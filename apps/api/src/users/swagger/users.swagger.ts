@@ -4,6 +4,7 @@ import {
   ApiBody,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiResponse,
 } from '@nestjs/swagger';
 import { ForgotPasswordDto } from '../dto/forgot-password.dto';
@@ -246,3 +247,27 @@ export const Disable2FADocs = applyDecorators(
   ApiResponse({ status: 401, description: 'Unauthorized' }),
   ApiResponse({ status: 400, description: '2FA is not enabled' }),
 );
+
+export const PublicProfileDocs = {
+  availability: applyDecorators(
+    ApiOperation({
+      summary: 'Check a username',
+      description:
+        "Whether a username is free for the signed-in user. Their own current username counts as available. `reason` is 'reserved' or 'taken' when it isn't.",
+    }),
+    ApiBearerAuth('JWT-auth'),
+    ApiQuery({ name: 'username', example: 'asha_v' }),
+    ApiResponse({ status: 200, description: 'Availability checked' }),
+    ApiResponse({ status: 400, description: 'The username breaks the rules' }),
+  ),
+  profile: applyDecorators(
+    ApiOperation({
+      summary: 'Public profile',
+      description:
+        'Public fields of an account by username: username, fullName, avatarUrl and joinedAt. Suspended and closed accounts return 404.',
+    }),
+    ApiParam({ name: 'username', example: 'asha_v' }),
+    ApiResponse({ status: 200, description: 'Profile fetched' }),
+    ApiResponse({ status: 404, description: 'No account has that username' }),
+  ),
+};

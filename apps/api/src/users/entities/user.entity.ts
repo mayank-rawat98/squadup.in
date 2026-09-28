@@ -21,7 +21,6 @@ export enum AccountStatus {
   HOLD = 'hold',
 }
 
-
 @Entity({ name: 'users' })
 @Index('IDX_USER_PHONE', ['phone'], {
   unique: true,
@@ -44,6 +43,15 @@ export class User {
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   phone?: string;
+
+  /**
+   * Public handle for /u/<username>. Always stored lowercase (the DTO
+   * normalises it), so the plain unique index is case-insensitive in effect.
+   * Null until the user picks one.
+   */
+  @Index('UQ_USERS_USERNAME', { unique: true })
+  @Column({ type: 'varchar', length: 30, nullable: true })
+  username!: string | null;
 
   @Column({ type: 'varchar', length: 255, select: false })
   password!: string;
@@ -104,7 +112,6 @@ export class User {
 
   @Column({ type: 'varchar', length: 100, nullable: true })
   country?: string;
-
 
   @OneToOne('UserSettings', (settings: UserSettings) => settings.user)
   settings?: UserSettings;

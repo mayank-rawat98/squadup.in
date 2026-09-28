@@ -50,6 +50,11 @@ export class UsersRepository {
     });
   }
 
+  /** `username` must already be lowercase; usernames are stored that way. */
+  async findByUsername(username: string) {
+    return this.repo.findOne({ where: { username } });
+  }
+
   async findByEmail(email: string) {
     return this.repo.findOne({
       where: { email },
