@@ -35,3 +35,16 @@ export const registerSchema = z
   });
 
 export type RegisterFormValues = z.infer<typeof registerSchema>;
+
+/*
+ * Sign-in only checks that something was typed. Length rules belong to
+ * choosing a password; here they would only hint at what a valid one looks
+ * like.
+ */
+export const loginSchema = z.object({
+  email: emailSchema,
+  password: z.string().min(1, 'Enter your password.'),
+  rememberMe: z.boolean(),
+});
+
+export type LoginFormValues = z.infer<typeof loginSchema>;
