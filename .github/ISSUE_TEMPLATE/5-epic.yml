@@ -1,0 +1,27 @@
+name: Epic
+description: A body of work split into sub-issues
+title: 'epic(<scope>): <the outcome>'
+labels: ['type: epic']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Add each piece of work as a sub-issue (**Create sub-issue**). Epics get no branch; their sub-issues do.
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Outcome
+      description: What is true when every sub-issue has closed.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: In and out of scope
+    validations:
+      required: true
+  - type: textarea
+    id: roadmap
+    attributes:
+      label: Roadmap section
+      description: The ROADMAP.md milestone this delivers, if any.
