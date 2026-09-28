@@ -6,25 +6,31 @@ jest.mock('@/features/auth', () => ({ useSignOut: jest.fn() }));
 
 describe('SignOutEverywhereCard', () => {
   it('asks for confirmation before signing out everywhere', () => {
-    const signOut = jest.fn().mockResolvedValue(undefined);
-    jest.mocked(useSignOut).mockReturnValue({ signOut, pending: false });
+    const signOutEverywhere = jest.fn().mockResolvedValue(undefined);
+    jest.mocked(useSignOut).mockReturnValue({
+      signOut: jest.fn(),
+      signOutEverywhere,
+      pending: false,
+    });
     render(<SignOutEverywhereCard />);
 
     fireEvent.click(
       screen.getByRole('button', { name: 'Sign out everywhere' }),
     );
-    expect(signOut).not.toHaveBeenCalled();
+    expect(signOutEverywhere).not.toHaveBeenCalled();
 
     fireEvent.click(
       screen.getByRole('button', { name: 'Yes, sign out everywhere' }),
     );
-    expect(signOut).toHaveBeenCalledWith({ everywhere: true });
+    expect(signOutEverywhere).toHaveBeenCalledTimes(1);
   });
 
   it('can back out of the confirmation', () => {
-    jest
-      .mocked(useSignOut)
-      .mockReturnValue({ signOut: jest.fn(), pending: false });
+    jest.mocked(useSignOut).mockReturnValue({
+      signOut: jest.fn(),
+      signOutEverywhere: jest.fn(),
+      pending: false,
+    });
     render(<SignOutEverywhereCard />);
 
     fireEvent.click(

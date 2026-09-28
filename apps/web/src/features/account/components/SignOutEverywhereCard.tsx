@@ -8,7 +8,7 @@ import SettingsCard from './SettingsCard';
 /* Ends every session, this one included, behind one confirm step. */
 export default function SignOutEverywhereCard() {
   const [confirming, setConfirming] = useState(false);
-  const { signOut, pending } = useSignOut();
+  const { signOutEverywhere, pending } = useSignOut();
 
   return (
     <SettingsCard
@@ -26,7 +26,7 @@ export default function SignOutEverywhereCard() {
             <Button
               variant="destructive"
               disabled={pending}
-              onClick={() => void signOut({ everywhere: true })}
+              onClick={() => void signOutEverywhere()}
             >
               {pending ? 'Signing out…' : 'Yes, sign out everywhere'}
             </Button>

@@ -10,7 +10,8 @@ import { logout, logoutAll } from '../api/auth.api';
  * cached query go regardless, so nothing of this user is left for whoever
  * uses the browser next. The server-side session then simply expires.
  *
- * `everywhere` ends every session of the account instead of only this one.
+ * `signOutEverywhere` ends every session of the account instead of only this
+ * one.
  *
  * A full page load rather than a router push, so no in-memory state survives,
  * and so the signed-in guard doesn't read the cleared session as "expired"
@@ -20,11 +21,11 @@ export function useSignOut() {
   const queryClient = useQueryClient();
   const [pending, setPending] = useState(false);
 
-  const signOut = useCallback(
-    async ({ everywhere = false }: { everywhere?: boolean } = {}) => {
+  const end = useCallback(
+    async (callApi: () => Promise<void>) => {
       setPending(true);
       try {
-        await (everywhere ? logoutAll() : logout());
+        await callApi();
       } catch {
         /* signed out locally below either way */
       }
@@ -35,5 +36,8 @@ export function useSignOut() {
     [queryClient],
   );
 
-  return { signOut, pending };
+  const signOut = useCallback(() => end(logout), [end]);
+  const signOutEverywhere = useCallback(() => end(logoutAll), [end]);
+
+  return { signOut, signOutEverywhere, pending };
 }
