@@ -1,0 +1,17 @@
+import type { ReactNode } from 'react';
+import { Toaster } from '@squadup.in/ui';
+import { AuthShell } from '@/features/auth';
+import QueryProvider from '@/providers/QueryProvider';
+
+/*
+ * Every /auth page. The query provider and toaster live here and in the
+ * signed-in layout, not the root, so the landing page ships neither.
+ */
+export default function AuthLayout({ children }: { children: ReactNode }) {
+  return (
+    <QueryProvider>
+      <AuthShell>{children}</AuthShell>
+      <Toaster />
+    </QueryProvider>
+  );
+}

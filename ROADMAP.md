@@ -144,15 +144,15 @@ Do these first; every page depends on them.
   choice across the 2FA step. `POST /auth/refresh` does not return
   `rememberMe`, so keep using the storage chosen at sign-in. Load the current
   user with `GET /auth/me`.
-- ⬜ **Safe post-login redirect.** Keep `?redirect=` in `sessionStorage` so
+- ✅ **Safe post-login redirect.** Keep `?redirect=` in `sessionStorage` so
   it survives the 2FA detour. Accept only same-origin paths: must start with
   `/` and must not start with `//` or `/\`. Anything else falls back to the
   default (`/dashboard`, a placeholder page until Milestone 2).
-- ⬜ **Route guards.** Signed-in users who open an `/auth/*` page go to the
+- ✅ **Route guards.** Signed-in users who open an `/auth/*` page go to the
   redirect target. Signed-out users who open an app page go to
   `/auth/login?redirect=…`. Avoid a flash of the wrong UI while `GET
 /auth/me` loads.
-- ⬜ **Auth layout.** A shared two-column layout for `/auth/*`: brand panel
+- ✅ **Auth layout.** A shared two-column layout for `/auth/*`: brand panel
   on the left (hidden on mobile) and form on the right.
 
 ### 1.2 Routes
