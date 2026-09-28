@@ -38,7 +38,7 @@ Status legend: ✅ Done · 🚧 In progress · ⬜ Not started
 
 | #   | Milestone                                                                         | Status |
 | --- | --------------------------------------------------------------------------------- | ------ |
-| 1   | [Authentication pages](#milestone-1-authentication-pages)                         | ⬜     |
+| 1   | [Authentication pages](#milestone-1-authentication-pages)                         | ✅     |
 | 2   | [App shell, dashboard and profile](#milestone-2-app-shell-dashboard-and-profile)  | ⬜     |
 | 3   | [Solo challenges and leaderboards](#milestone-3-solo-challenges-and-leaderboards) | ⬜     |
 | 4   | [Arenas and proctoring](#milestone-4-arenas-and-proctoring)                       | ⬜     |
