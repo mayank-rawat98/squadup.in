@@ -1,8 +1,10 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { EmailTemplateRepository } from './email-template.repository';
 import {
   EMAIL_AUDIENCE,
   EMAIL_TEMPLATE_CATALOGUE,
+  EmailTemplateCatalogueEntry,
   TEMPLATE_CACHE_TTL_MS,
 } from './constants/mailer.constants';
 import { EmailTemplate } from './entities/email-template.entity';
@@ -12,9 +14,17 @@ interface CacheEntry {
   expiresAt: number;
 }
 
+/** Where a resolved templateId came from, shown to admins. */
+export type TemplateSource = 'database' | 'env';
+
 /**
  * Owns the emailType → mailtr templateId mapping: the admin-configured table
  * that replaced the HTML templates this API used to render itself.
+ *
+ * A templateId set on the database row (from the ops dashboard) wins. When the
+ * row has none, the entry's env var (e.g. MAILTR_TEMPLATE_WELCOME) is used, so
+ * a deploy can configure mail before any staff tooling exists. A deactivated
+ * row suppresses the send whatever the env says.
  *
  * Resolution is on the hot path of every transactional email, so lookups are
  * cached in-process. Writes clear the cache for this instance immediately; the
@@ -26,16 +36,37 @@ export class EmailTemplateService {
   private readonly logger = new Logger(EmailTemplateService.name);
   private readonly cache = new Map<string, CacheEntry>();
 
-  constructor(private readonly repository: EmailTemplateRepository) {}
+  constructor(
+    private readonly repository: EmailTemplateRepository,
+    private readonly configService: ConfigService,
+  ) {}
 
   private static key(emailType: string, audience: EMAIL_AUDIENCE): string {
     return `${emailType}:${audience}`;
   }
 
+  private static catalogueEntry(
+    emailType: string,
+    audience: EMAIL_AUDIENCE,
+  ): EmailTemplateCatalogueEntry | undefined {
+    return EMAIL_TEMPLATE_CATALOGUE.find(
+      (e) => e.emailType === emailType && e.audience === audience,
+    );
+  }
+
+  /** The templateId from the entry's env var, or null when unset or blank. */
+  private envTemplateId(entry: EmailTemplateCatalogueEntry | undefined) {
+    if (!entry) {
+      return null;
+    }
+    const value = this.configService.get<string>(entry.envKey)?.trim();
+    return value ? value : null;
+  }
+
   /**
-   * The mailtr templateId to send for this functionality, or null when the
-   * admin has not configured one (or has deactivated it). Callers treat null as
-   * a send failure rather than falling back to anything.
+   * The mailtr templateId to send for this functionality, or null when neither
+   * the database row nor the env var sets one, or the row is deactivated.
+   * Callers treat null as a send failure.
    */
   async resolveTemplateId(
     emailType: string,
@@ -43,25 +74,31 @@ export class EmailTemplateService {
   ): Promise<{ templateId: string; fromEmail: string | null } | null> {
     const mapping = await this.getCached(emailType, audience);
 
-    if (!mapping) {
-      this.logger.error(
-        `No email template row for ${emailType}/${audience}. Add it in the ops dashboard (Email Templates).`,
-      );
-      return null;
-    }
-    if (!mapping.isActive) {
+    if (mapping && !mapping.isActive) {
       this.logger.warn(
         `Email template ${emailType}/${audience} is deactivated — send suppressed.`,
       );
       return null;
     }
-    if (!mapping.templateId) {
-      this.logger.error(
-        `Email template ${emailType}/${audience} has no mailtr templateId configured — send skipped.`,
-      );
-      return null;
+    if (mapping?.templateId) {
+      return { templateId: mapping.templateId, fromEmail: mapping.fromEmail };
     }
-    return { templateId: mapping.templateId, fromEmail: mapping.fromEmail };
+
+    const entry = EmailTemplateService.catalogueEntry(emailType, audience);
+    const envTemplateId = this.envTemplateId(entry);
+    if (envTemplateId) {
+      return {
+        templateId: envTemplateId,
+        fromEmail: mapping?.fromEmail ?? null,
+      };
+    }
+
+    this.logger.error(
+      entry
+        ? `No mailtr templateId for ${emailType}/${audience} — send skipped. Set ${entry.envKey} or configure it in the ops dashboard (Email Templates).`
+        : `Unknown email type ${emailType}/${audience} — add it to EMAIL_TEMPLATE_CATALOGUE.`,
+    );
+    return null;
   }
 
   private async getCached(
@@ -98,15 +135,23 @@ export class EmailTemplateService {
       const row = byKey.get(
         EmailTemplateService.key(entry.emailType, entry.audience),
       );
+      const envTemplateId = this.envTemplateId(entry);
+      const source: TemplateSource | null = row?.templateId
+        ? 'database'
+        : envTemplateId
+          ? 'env'
+          : null;
       return {
         id: row?.id ?? null,
         emailType: entry.emailType,
         audience: entry.audience,
         label: row?.label ?? entry.label,
-        templateId: row?.templateId ?? null,
+        templateId: row?.templateId ?? envTemplateId,
         fromEmail: row?.fromEmail ?? null,
         isActive: row?.isActive ?? true,
-        configured: Boolean(row?.templateId),
+        configured: source !== null,
+        source,
+        envKey: entry.envKey,
         updatedAt: row?.updatedAt ?? null,
       };
     });
@@ -116,11 +161,13 @@ export class EmailTemplateService {
   async setTemplate(
     emailType: string,
     audience: EMAIL_AUDIENCE,
-    patch: { templateId?: string | null; fromEmail?: string | null; isActive?: boolean },
+    patch: {
+      templateId?: string | null;
+      fromEmail?: string | null;
+      isActive?: boolean;
+    },
   ) {
-    const known = EMAIL_TEMPLATE_CATALOGUE.find(
-      (e) => e.emailType === emailType && e.audience === audience,
-    );
+    const known = EmailTemplateService.catalogueEntry(emailType, audience);
     if (!known) {
       throw new NotFoundException(
         `Unknown email type "${emailType}" for audience "${audience}"`,

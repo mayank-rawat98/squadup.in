@@ -1,5 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { EMAIL_AUDIENCE } from './constants/mailer.constants';
+import { clientUrl } from '../config';
+import { normalizeUrl } from '../utils/utils';
+import { EMAIL_APP_NAME, EMAIL_AUDIENCE } from './constants/mailer.constants';
 import { EmailTemplateService } from './email-template.service';
 import { MailtrClient } from './mailtr.client';
 
@@ -35,7 +37,8 @@ export interface PreRenderedEmailParams {
  * Templates are no longer stored in this repo. Each functionality maps to a
  * mailtr template via an admin-configured row (see EmailTemplateService), and a
  * send is just `templateId` + `variables` — mailtr renders the markup and owns
- * the subject line.
+ * the subject line. Every template also receives the base variables from
+ * `baseVariables` (documented in docs/emails.md).
  *
  * Every method resolves to a boolean and never throws: callers already treat
  * `false` as "the mail did not go out" and compensate (rolling back a
@@ -91,9 +94,7 @@ export class MailerService {
    * notification digest queue uses this — it composes per-user content that has
    * no fixed template. Prefer notifyUserByEmail for anything template-shaped.
    */
-  async sendPreRenderedEmail(
-    params: PreRenderedEmailParams,
-  ): Promise<boolean> {
+  async sendPreRenderedEmail(params: PreRenderedEmailParams): Promise<boolean> {
     return this.mailtr.sendRaw({
       to: [params.recipient],
       subject: params.subject,
@@ -101,6 +102,16 @@ export class MailerService {
       text: params.text,
       from: params.senderEmail,
     });
+  }
+
+  /** Variables every template can rely on, whatever the email. */
+  private static baseVariables(recipient: string): EmailVariables {
+    return {
+      appName: EMAIL_APP_NAME,
+      appUrl: normalizeUrl(clientUrl),
+      email: recipient,
+      year: String(new Date().getFullYear()),
+    };
   }
 
   private async send(
@@ -126,7 +137,8 @@ export class MailerService {
     return this.mailtr.sendTemplate({
       to: [recipient],
       templateId: resolved.templateId,
-      variables,
+      // A caller's own value wins over a base variable of the same name.
+      variables: { ...MailerService.baseVariables(recipient), ...variables },
       from: resolved.fromEmail ?? undefined,
     });
   }
