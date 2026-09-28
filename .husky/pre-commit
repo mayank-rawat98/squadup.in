@@ -1,0 +1,2 @@
+# Sequential, so Prettier and ESLint never write the same file at once.
+npx lint-staged --concurrent false

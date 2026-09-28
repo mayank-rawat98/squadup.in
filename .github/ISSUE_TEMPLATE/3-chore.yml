@@ -1,0 +1,28 @@
+name: Chore
+description: Maintenance, dependencies, tooling, refactors, CI
+title: 'chore(<scope>): <the change>'
+labels: ['type: chore']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use the right type in the title: `chore`, `refactor`, `perf`, `build`, `ci` or `test`.
+        Scopes are listed in CONTRIBUTING.md §1. Add the matching `area:` label.
+  - type: textarea
+    id: what
+    attributes:
+      label: What changes
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why now
+    validations:
+      required: true
+  - type: textarea
+    id: risks
+    attributes:
+      label: Risks and rollback
+    validations:
+      required: true
