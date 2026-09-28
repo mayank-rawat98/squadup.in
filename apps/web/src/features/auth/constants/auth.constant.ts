@@ -1,3 +1,18 @@
+/** Paths the API puts in emails are fixed; see ROADMAP.md §1.2. */
+export const AUTH_ROUTES = {
+  login: '/auth/login',
+  register: '/auth/register',
+  verifyEmail: '/auth/verify-email',
+  forgotPassword: '/auth/forgot-password',
+  twoFactor: '/auth/2fa',
+  twoFactorVerify: '/auth/2fa/verify',
+  terms: '/legal/terms',
+  privacy: '/legal/privacy',
+} as const;
+
+/** Seconds before "Resend" works again, for every emailed link or code. */
+export const RESEND_COOLDOWN_SECONDS = 60;
+
 /** TanStack Query keys for the auth feature, in one place so invalidation matches. */
 export const AUTH_QUERY_KEYS = {
   currentUser: ['auth', 'me'] as const,

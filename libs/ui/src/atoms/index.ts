@@ -1,3 +1,5 @@
+export { default as Alert } from './Alert';
+export type { AlertProps } from './Alert';
 export { default as Avatar, AvatarGroup } from './Avatar';
 export type { AvatarProps, AvatarGroupProps } from './Avatar';
 export { default as Badge } from './Badge';
