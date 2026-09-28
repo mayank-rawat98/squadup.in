@@ -1,4 +1,10 @@
-import { IsDefined, IsNotEmpty, IsString } from 'class-validator';
+import {
+  IsDefined,
+  IsNotEmpty,
+  IsString,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class ForgotPasswordDto {
@@ -20,12 +26,18 @@ export class ForgotPasswordDto {
   @IsNotEmpty()
   token!: string;
 
+  // Same rules as registration (RegisterUserDto), so a reset can't set a
+  // password that sign-up would have refused.
   @ApiProperty({
     description: 'The new password',
     example: 'NewPassword123!',
+    minLength: 8,
+    maxLength: 128,
   })
   @IsDefined()
   @IsString()
   @IsNotEmpty()
+  @MinLength(8)
+  @MaxLength(128)
   newPassword!: string;
 }
