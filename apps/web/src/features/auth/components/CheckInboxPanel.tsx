@@ -29,7 +29,9 @@ export default function CheckInboxPanel({
         </Typography>
         <Typography variant="bodySmall" className="text-muted-foreground">
           We sent a verification link to{' '}
-          <span className="text-foreground font-medium break-all">{email}</span>
+          <span className="text-foreground font-medium break-words">
+            {email}
+          </span>
           . Open it to verify your email. The link is valid for 15 minutes.
         </Typography>
       </header>
