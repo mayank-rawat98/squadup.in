@@ -139,7 +139,7 @@ A breaking change adds `!` after the scope (`feat(api)!: …`) and a `BREAKING C
 | `pre-commit` | lint-staged on staged files: `prettier --write`, then `eslint --fix`                                           | Fix what ESLint couldn't     |
 | `pre-push`   | `npm run check:affected`: lint, typecheck, test and build for every project changed since `origin/dev`         | Run the same command locally |
 
-Skip hooks with `--no-verify` only in an emergency, and say so in the PR. CI (`.github/workflows/ci.yml`) runs the full `lint test build typecheck` on every PR into `dev` or `main` and on every push to `dev`.
+Skip hooks with `--no-verify` only in an emergency, and say so in the PR. CI (`.github/workflows/ci.yml`) doesn't run on PRs into `dev`, so the pre-push hook is the check your change gets before review. CI runs the full `lint test build typecheck` once per release, as the first step of the production deploy when `dev` is merged into `main`, and a failure stops the deploy.
 
 Formatting is Prettier (`.prettierrc`), and line endings are LF (`.gitattributes`). `npm run format` formats everything.
 

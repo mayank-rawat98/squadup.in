@@ -1,51 +1,48 @@
 name: CI
 
+# Runs as the first job of every production deploy: `deploy.prod.yml` calls
+# this on a push to main (a merged dev → main PR) and builds nothing until it
+# passes. A red CI stops the deploy instead of reporting on a site already live.
+#
+# It no longer runs on pull requests or on pushes to dev. The standing
+# dev → main PR is re-synchronised by every merge into dev, so a PR trigger ran
+# the full suite again and again for one release. A break on dev is caught when
+# dev is promoted, before it deploys. The pre-push hook (`npm run
+# check:affected`) is the check that runs as work lands.
+#
+# `workflow_dispatch` is for running it by hand on any branch, before a
+# release, without deploying.
 on:
-  push:
-    branches:
-      - dev
-  # Pull requests into main (dev → main) must pass before they can merge; the
-  # "protect main" ruleset requires the `ci` check. PRs into dev run it too, so
-  # contributors see failures before review.
-  pull_request:
-    branches:
-      - main
-      - dev
+  workflow_call:
+  workflow_dispatch:
 
 permissions:
   actions: read
   contents: read
 
-# A newer push to the same branch or PR makes the running check obsolete.
+# Keyed on the commit, and never cancelled: this is part of a deploy, and
+# deploy.prod.yml already queues deploys one at a time. Cancelling a queued
+# release's check would fail that deploy rather than skip it.
 concurrency:
-  group: ci-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.sha }}
+  cancel-in-progress: false
 
 jobs:
   main:
-    # The status check name the ruleset requires.
     name: ci
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
         with:
           filter: tree:0
           fetch-depth: 0
 
-      # This enables task distribution via Nx Cloud
-      # Run this command as early as possible, before dependencies are installed
-      # Learn more at https://nx.dev/ci/reference/nx-cloud-cli#npx-nxcloud-startcirun
-      # Connect your workspace by running "nx connect" and uncomment this line to enable task distribution
-      # - run: npx nx start-ci-run --distribute-on="3 linux-medium-js" --stop-agents-after="build"
-
-      # Cache node_modules
       - uses: actions/setup-node@v6
         with:
-          node-version: 24
+          node-version-file: '.nvmrc'
           cache: 'npm'
 
       - run: npm ci
 
-      # Prepend any command with "nx record --" to record its logs to Nx Cloud
-      # - run: npx nx record -- echo Hello World
       - run: npx nx run-many -t lint test build typecheck

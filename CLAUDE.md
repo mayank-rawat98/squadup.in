@@ -19,7 +19,7 @@ Guidance for Claude Code (and anyone else) working in this repository. Read it f
 | Storage        | MinIO (S3-compatible), served through the CDN domain                                            |
 | Auth           | JWT access/refresh, passkeys (WebAuthn), TOTP 2FA, Google sign-in; a separate staff identity    |
 | Infra          | Docker images on GHCR, one Docker Compose stack on a VPS behind **Caddy**, Prometheus + Grafana |
-| CI/CD          | `ci.yml` on PRs into `dev`/`main` and pushes to `dev`; `deploy.prod.yml` on push to `main`      |
+| CI/CD          | `deploy.prod.yml` on push to `main`, which runs `ci.yml` first and deploys only if it passes    |
 | Monorepo       | **Nx 23**, npm workspaces. Node ≥ 24, npm ≥ 11                                                  |
 | Package mgr    | **npm only.** Never use pnpm or yarn, and never commit another lockfile                         |
 
@@ -249,7 +249,8 @@ Quality floor (non-negotiable):
 
 ### CI/CD
 
-- `ci.yml` runs `nx run-many -t lint test build typecheck` on PRs into `dev` and `main` and on pushes to `dev`. The `ci` check gates merges into `main`.
+- `ci.yml` runs `nx run-many -t lint test build typecheck`, once per release: it is the first job of `deploy.prod.yml` on a push to `main` (a merged `dev` → `main` PR), and nothing is built or deployed unless it passes. It also runs by hand from the Actions tab (`workflow_dispatch`) on any branch.
+- Nothing runs on PRs into `dev` or pushes to `dev`. The pre-push hook (`npm run check:affected`) is the check as work lands; a break that slips through is caught when `dev` is promoted, before it deploys.
 - `deploy.prod.yml` on push to `main`: detect changed services → build and push images tagged with `latest` and the git SHA → run migrations in a one-off container → deploy. A failed migration blocks the deploy.
 - Migrations must be backward-compatible with the running version (expand → migrate → contract), because they run before the new images take traffic.
 

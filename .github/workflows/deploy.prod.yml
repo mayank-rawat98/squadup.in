@@ -15,7 +15,18 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # The release gate: lint, typecheck, test and build on the commit being
+  # deployed. Nothing below starts until it passes, so a red CI stops the
+  # deploy instead of reporting on a site that is already live.
+  ci:
+    name: CI
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      actions: read
+      contents: read
+
   create-env-file:
+    needs: ci
     runs-on: ubuntu-latest
     steps:
       - name: Create .env file in server directory
@@ -30,6 +41,7 @@ jobs:
             printf '%s' "${{ secrets.PROD_ENV_FILE }}" > .env.production
             echo "Environment file created successfully."
   detect-changes:
+    needs: ci
     runs-on: ubuntu-latest
     outputs:
       server: ${{ steps.filter.outputs.server }}
@@ -149,9 +161,10 @@ jobs:
     # Needs the freshly built+pushed server image (which contains the compiled
     # migrations) and the .env.production file on the VPS.
     # Skip when only client/non-server files changed — no new server image was built.
-    needs: [detect-changes, build-and-push, create-env-file]
+    needs: [ci, detect-changes, build-and-push, create-env-file]
     if: |
       always() &&
+      needs.ci.result == 'success' &&
       needs.create-env-file.result == 'success' &&
       (needs.build-and-push.result == 'success' || needs.build-and-push.result == 'skipped') &&
       (needs.detect-changes.outputs.server == 'true' || needs.detect-changes.outputs.infra == 'true')
@@ -198,12 +211,14 @@ jobs:
           SLACK_COLOR: failure
 
   deploy:
-    needs: [detect-changes, build-and-push, create-env-file, migrate]
+    needs: [ci, detect-changes, build-and-push, create-env-file, migrate]
+    # A failed CI blocks it outright; the always() below would otherwise let it run.
     # migrate is skipped on client-only changes, so allow 'skipped' but block on 'failure'.
     # Also skip deploy entirely when no services changed (e.g. infra-only workflow edits
     # with no image rebuild) to avoid pulling a non-existent :latest tag.
     if: |
       always() &&
+      needs.ci.result == 'success' &&
       needs.create-env-file.result == 'success' &&
       needs.migrate.result != 'failure' &&
       (needs.build-and-push.result == 'success' || needs.build-and-push.result == 'skipped') &&
