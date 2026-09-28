@@ -20,6 +20,11 @@ export async function logout(): Promise<void> {
   await apiClient.request<null>('/auth/logout', { method: 'POST' });
 }
 
+/** Ends every session this account has, on every device. */
+export async function logoutAll(): Promise<void> {
+  await apiClient.request<null>('/auth/logout-all', { method: 'POST' });
+}
+
 export interface RegisterPayload {
   email: string;
   password: string;

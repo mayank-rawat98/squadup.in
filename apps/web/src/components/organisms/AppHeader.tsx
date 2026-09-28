@@ -53,7 +53,7 @@ function AppHeader() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={signOut}
+            onClick={() => void signOut()}
             disabled={pending}
           >
             <LogOut aria-hidden="true" className="h-4 w-4" />
