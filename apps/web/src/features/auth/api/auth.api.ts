@@ -113,3 +113,27 @@ export function verifyTwoFactor(payload: {
     body: payload,
   });
 }
+
+/** Emails a reset link to the address, if it has an account. */
+export async function requestPasswordReset(email: string): Promise<void> {
+  await apiClient.request<null>('/users/forgot-password-email', {
+    method: 'POST',
+    body: { email },
+  });
+}
+
+/** Sets a new password with the token from the reset link. */
+export async function resetPassword(payload: {
+  token: string;
+  email: string;
+  newPassword: string;
+}): Promise<void> {
+  await apiClient.request<null>('/users/forgot-password', {
+    method: 'POST',
+    body: {
+      token: payload.token,
+      encodedEmail: encodeURIComponent(payload.email),
+      newPassword: payload.newPassword,
+    },
+  });
+}
