@@ -15,6 +15,8 @@ export interface LogoProps {
   className?: string;
   /** Renders as a link to home unless false. */
   href?: string | false;
+  /** Wordmark in the background colour, for an inverted (foreground) surface. */
+  inverted?: boolean;
 }
 
 function LogoMark({ className }: { className?: string }) {
@@ -34,12 +36,22 @@ function LogoMark({ className }: { className?: string }) {
   );
 }
 
-function Logo({ markOnly = false, className, href = '/' }: LogoProps) {
+function Logo({
+  markOnly = false,
+  className,
+  href = '/',
+  inverted = false,
+}: LogoProps) {
   const content = (
     <>
       <LogoMark />
       {!markOnly && (
-        <span className="text-foreground text-h4 font-bold tracking-tight">
+        <span
+          className={cn(
+            'text-h4 font-bold tracking-tight',
+            inverted ? 'text-background' : 'text-foreground',
+          )}
+        >
           squadup
         </span>
       )}

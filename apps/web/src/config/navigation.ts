@@ -74,8 +74,8 @@ export const FOOTER_COLUMNS: FooterColumn[] = [
 ];
 
 export const AUTH_LINKS = {
-  login: { label: 'Log in', href: '/login' },
-  signup: { label: 'Get Started', href: '/signup' },
+  login: { label: 'Log in', href: '/auth/login' },
+  signup: { label: 'Get Started', href: '/auth/register' },
 } as const;
 
 export const SOCIAL_LINKS = [

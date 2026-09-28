@@ -121,7 +121,7 @@ Do these first; every page depends on them.
   toggle), `Label`, `Checkbox`, `FieldError`, `OtpInput` (6 slots, digits
   only, auto-focus, paste support, built on `input-otp`) and `Toaster`. Follow
   the atoms/molecules split and export them from the package index.
-- ⬜ **API client** in `apps/web/src/lib/api/`:
+- ✅ **API client** in `apps/web/src/lib/api/`:
   - Base URL from a new `NEXT_PUBLIC_API_URL` (e.g.
     `http://localhost:8080/api/v1`). It's already in `.env.example`.
     Next.js only reads env files from `apps/web`, not the repo root, so load
@@ -138,21 +138,21 @@ Do these first; every page depends on them.
     requests (a single in-flight promise, because refresh tokens rotate), then
     retry the original request. If the refresh fails, clear the session and
     send the user to `/auth/login?redirect=<current path>`.
-- ⬜ **Session store** (`apps/web/src/lib/auth/`): keep `accessToken`,
+- ✅ **Session store** (`apps/web/src/lib/auth/`): keep `accessToken`,
   `deviceId` and `expiresIn` in memory, and mirror them to `localStorage` when
   "Remember me" was ticked or `sessionStorage` when it wasn't. Remember the
   choice across the 2FA step. `POST /auth/refresh` does not return
   `rememberMe`, so keep using the storage chosen at sign-in. Load the current
   user with `GET /auth/me`.
-- ⬜ **Safe post-login redirect.** Keep `?redirect=` in `sessionStorage` so
+- ✅ **Safe post-login redirect.** Keep `?redirect=` in `sessionStorage` so
   it survives the 2FA detour. Accept only same-origin paths: must start with
   `/` and must not start with `//` or `/\`. Anything else falls back to the
   default (`/dashboard`, a placeholder page until Milestone 2).
-- ⬜ **Route guards.** Signed-in users who open an `/auth/*` page go to the
+- ✅ **Route guards.** Signed-in users who open an `/auth/*` page go to the
   redirect target. Signed-out users who open an app page go to
   `/auth/login?redirect=…`. Avoid a flash of the wrong UI while `GET
 /auth/me` loads.
-- ⬜ **Auth layout.** A shared two-column layout for `/auth/*`: brand panel
+- ✅ **Auth layout.** A shared two-column layout for `/auth/*`: brand panel
   on the left (hidden on mobile) and form on the right.
 
 ### 1.2 Routes

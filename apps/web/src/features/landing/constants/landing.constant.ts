@@ -590,7 +590,7 @@ export const BUILT_ON_COPY = {
   emptyTitle: 'The first projects are being built right now',
   emptyBody:
     'This is where finished work goes: the project, the squad that built it, the stack they chose and a link you can open. Real builds only, added as arenas close.',
-  emptyCta: { label: 'Start building', href: '/signup' },
+  emptyCta: { label: 'Start building', href: '/auth/register' },
 } as const;
 
 /* -------------------------------------------------------------------------
@@ -718,7 +718,7 @@ export const FINAL_CTA_COPY = {
   title: 'Your Next Great Project Starts Here.',
   subtitle:
     'Join developers who are building real products, forming lasting squads, and growing through every arena. Your first challenge is waiting.',
-  primaryCta: { label: 'Enter Your First Arena', href: '/signup' },
+  primaryCta: { label: 'Enter Your First Arena', href: '/auth/register' },
   secondaryCta: { label: 'Explore Arenas', href: '/arenas' },
   /* Removes the two biggest objections without adding another FAQ entry. */
   supporting: [
