@@ -3,7 +3,10 @@
   "version": "0.0.1",
   "private": true,
   "nx": {
-    "tags": ["type:app", "scope:web"],
+    "tags": [
+      "type:app",
+      "scope:web"
+    ],
     "targets": {
       "serve": {
         "options": {
@@ -25,12 +28,16 @@
       },
       "build": {
         "options": {
-          "env": { "NODE_ENV": "production" }
+          "env": {
+            "NODE_ENV": "production"
+          }
         }
       },
       "typecheck": {
         "cache": true,
-        "dependsOn": ["^build"],
+        "dependsOn": [
+          "^build"
+        ],
         "inputs": [
           "default",
           "^default",
@@ -40,7 +47,9 @@
             "transitive": true
           },
           {
-            "externalDependencies": ["typescript"]
+            "externalDependencies": [
+              "typescript"
+            ]
           }
         ],
         "outputs": [],
@@ -53,9 +62,13 @@
     }
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.9.1",
     "@squadup.in/ui": "^0.0.1",
+    "@tanstack/react-query": "^5.104.0",
     "next": "~16.1.6",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "react-hook-form": "^7.89.0",
+    "zod": "^4.6.5"
   }
 }
