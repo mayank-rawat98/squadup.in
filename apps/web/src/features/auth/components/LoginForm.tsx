@@ -39,7 +39,7 @@ const linkClass =
 
 export default function LoginForm() {
   useCaptureRedirect();
-  const completeSignIn = useCompleteSignIn();
+  const { completeSignIn } = useCompleteSignIn();
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),

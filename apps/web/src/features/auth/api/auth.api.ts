@@ -1,5 +1,10 @@
 import { type ApiEnvelope, apiClient } from '@/lib/api';
-import type { CurrentUser, SignInResponse } from '../types/auth.types';
+import type {
+  CurrentUser,
+  SignInResponse,
+  SignedInResponse,
+  TwoFactorMethod,
+} from '../types/auth.types';
 
 /*
  * One function per auth endpoint. Paths are relative to NEXT_PUBLIC_API_URL,
@@ -79,6 +84,31 @@ export interface LoginPayload {
  */
 export function login(payload: LoginPayload): Promise<SignInResponse> {
   return apiClient.request<SignInResponse>('/auth/login', {
+    method: 'POST',
+    body: payload,
+  });
+}
+
+/**
+ * Picks the second factor for this sign-in. For `email` this sends the
+ * `two_factor_otp` email, so it doubles as "resend the code". Needs the
+ * `2fa_session` cookie from sign-in.
+ */
+export async function selectTwoFactorMethod(
+  method: TwoFactorMethod,
+): Promise<void> {
+  await apiClient.request<null>('/auth/2fa/select-method', {
+    method: 'POST',
+    body: { method },
+  });
+}
+
+/** Completes a 2FA sign-in with the code for the selected method. */
+export function verifyTwoFactor(payload: {
+  code: string;
+  method: TwoFactorMethod;
+}): Promise<SignedInResponse> {
+  return apiClient.request<SignedInResponse>('/auth/verify-2fa', {
     method: 'POST',
     body: payload,
   });
