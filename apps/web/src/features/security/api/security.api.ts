@@ -66,3 +66,33 @@ export async function disableAuthenticatorWithEmailCode(
     { method: 'POST', body: { code } },
   );
 }
+
+/** Turning on email codes, step 1: send a `two_factor_otp` email. */
+export async function sendEmailTwoFactorCode(): Promise<void> {
+  await apiClient.request<null>('/settings/2fa/email/send-otp', {
+    method: 'POST',
+  });
+}
+
+/** Turning on email codes, step 2: confirm the code, which turns them on. */
+export async function enableEmailTwoFactor(code: string): Promise<void> {
+  await apiClient.request<null>('/settings/2fa/email/verify-otp', {
+    method: 'POST',
+    body: { code },
+  });
+}
+
+/** Turning off email codes, step 1: email a code to confirm it's the owner. */
+export async function sendEmailTwoFactorDisableCode(): Promise<void> {
+  await apiClient.request<null>('/settings/2fa/email/send-disable-otp', {
+    method: 'POST',
+  });
+}
+
+/** Turning off email codes, step 2: the code from that email. */
+export async function disableEmailTwoFactor(code: string): Promise<void> {
+  await apiClient.request<null>('/settings/2fa/email/disable', {
+    method: 'POST',
+    body: { code },
+  });
+}

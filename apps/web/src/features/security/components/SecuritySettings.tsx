@@ -3,6 +3,7 @@
 import { Typography } from '@squadup.in/ui';
 import { useCurrentUser } from '@/features/auth';
 import AuthenticatorCard from './AuthenticatorCard';
+import EmailTwoFactorCard from './EmailTwoFactorCard';
 
 /*
  * /settings/security. Only rendered inside RequireAuth, which waits for
@@ -41,6 +42,7 @@ export default function SecuritySettings() {
           </Typography>
         </div>
         <AuthenticatorCard user={user} />
+        <EmailTwoFactorCard user={user} />
       </section>
     </div>
   );
