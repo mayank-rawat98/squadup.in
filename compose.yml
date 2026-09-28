@@ -27,6 +27,10 @@ services:
       context: .
       dockerfile: ./docker/web/Dockerfile
       target: production
+      # Compiled into the browser bundle at build time; see docker/web/Dockerfile.
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-}
+        NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
     restart: unless-stopped
     profiles:
       - production

@@ -24,6 +24,22 @@ COPY tsconfig.base.json tsconfig.json ./
 COPY libs/ui ./libs/ui
 COPY apps/web ./apps/web
 
+# NEXT_PUBLIC_* values are compiled into the browser bundle by `next build`,
+# so they must be here at build time; setting them on the running container
+# does nothing. .env files are excluded from the build context
+# (.dockerignore), so they come in as build arguments. Both are public by
+# design: they end up in every visitor's browser.
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_GOOGLE_CLIENT_ID
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
+    NEXT_PUBLIC_GOOGLE_CLIENT_ID=$NEXT_PUBLIC_GOOGLE_CLIENT_ID
+
+# Without the API URL every auth page would fail at runtime, so refuse to
+# build rather than ship that. The Google client ID stays optional: without
+# it the "Continue with Google" button is hidden.
+RUN test -n "$NEXT_PUBLIC_API_URL" \
+    || (echo "NEXT_PUBLIC_API_URL build argument is required, e.g. --build-arg NEXT_PUBLIC_API_URL=https://api.squadup.in/api/v1" >&2 && exit 1)
+
 # Plain `next build` rather than `nx build`: that is all the Nx target runs,
 # and it avoids Nx's project-graph and tsconfig sync on a trimmed workspace.
 # The shared UI lib is compiled from source by Next (transpilePackages).
