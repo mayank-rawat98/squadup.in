@@ -54,7 +54,7 @@ function GoogleMark() {
 
 export default function GoogleSignInButton() {
   const clientId = getGoogleClientId();
-  const completeSignIn = useCompleteSignIn();
+  const { completeSignIn } = useCompleteSignIn();
 
   useEffect(() => {
     if (clientId) preloadGoogleAccounts();
