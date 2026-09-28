@@ -116,7 +116,9 @@ npx nx typecheck @squadup.in/web
 npx nx lint @squadup.in/web
 npx nx test @squadup.in/web
 
-npx nx run-many -t lint test typecheck   # everything, everywhere
+npm run check            # lint, typecheck, test and build everything (what CI runs)
+npm run check:affected   # the same, only for projects changed since origin/dev
+npm run format           # Prettier
 ```
 
 Database migrations:
@@ -137,7 +139,11 @@ for the pipeline. Pushes to `main` build the images, run migrations and roll out
 
 ## Contributing
 
-Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) first. To
+Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) first: it
+covers how issues, branches, commits and pull requests are named. The
+engineering rules are in [CLAUDE.md](CLAUDE.md), frontend patterns in
+[docs/frontend-conventions.md](docs/frontend-conventions.md), and the reasons
+behind the architecture in [docs/adr/](docs/adr/). To
 report a security issue, follow [SECURITY.md](SECURITY.md) and do not open a
 public issue.
 
