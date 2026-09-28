@@ -140,6 +140,12 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/${{ env.DOCKER_REPOSITORY }}/squadup-${{ matrix.service }}:latest
             ${{ env.REGISTRY }}/${{ env.DOCKER_REPOSITORY }}/squadup-${{ matrix.service }}:${{ github.sha }}
+          # Compiled into the web bundle at build time (see docker/web/Dockerfile).
+          # Public values, so repository variables; a secret of the same name
+          # works too. The api and ops images don't declare these and ignore them.
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL || secrets.NEXT_PUBLIC_API_URL }}
+            NEXT_PUBLIC_GOOGLE_CLIENT_ID=${{ vars.NEXT_PUBLIC_GOOGLE_CLIENT_ID || secrets.NEXT_PUBLIC_GOOGLE_CLIENT_ID }}
       - name: Slack notify — Build and Push
         if: always()
         uses: rtCamp/action-slack-notify@v2
