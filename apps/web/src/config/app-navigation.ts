@@ -40,8 +40,10 @@ export const APP_NAV: readonly AppNavItem[] = [
   { label: 'Store', href: '/store', icon: ShoppingBag, comingSoon: true },
 ];
 
-/* Links in the user menu. */
+/* Links in the user menu. Profile and Account arrive with #48. */
 export const ACCOUNT_NAV = [
+  { label: 'Profile', href: '/settings/profile' },
+  { label: 'Account', href: '/settings/account' },
   { label: 'Security', href: '/settings/security' },
 ] as const;
 
