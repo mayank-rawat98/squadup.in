@@ -1,5 +1,6 @@
 export {
   getCurrentUser,
+  login,
   logout,
   register,
   resendVerificationEmail,
@@ -12,6 +13,7 @@ export { default as AuthShell } from './components/AuthShell';
 export { default as CheckInboxPanel } from './components/CheckInboxPanel';
 export { default as GoogleSignInButton } from './components/GoogleSignInButton';
 export { default as GuestOnly } from './components/GuestOnly';
+export { default as LoginForm } from './components/LoginForm';
 export { default as PageLoader } from './components/PageLoader';
 export { default as RegisterForm } from './components/RegisterForm';
 export { default as RequireAuth } from './components/RequireAuth';
@@ -24,6 +26,7 @@ export {
   AUTH_ROUTES,
   RESEND_COOLDOWN_SECONDS,
 } from './constants/auth.constant';
+export { useCaptureRedirect } from './hooks/use-capture-redirect';
 export { useCompleteSignIn } from './hooks/use-complete-sign-in';
 export { useCooldown } from './hooks/use-cooldown';
 export { useCurrentUser } from './hooks/use-current-user';

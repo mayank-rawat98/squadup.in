@@ -18,6 +18,7 @@ import {
 import { getErrorMessage } from '@/lib/api';
 import { register } from '../api/auth.api';
 import { AUTH_ROUTES } from '../constants/auth.constant';
+import { useCaptureRedirect } from '../hooks/use-capture-redirect';
 import {
   PASSWORD_MIN_LENGTH,
   type RegisterFormValues,
@@ -41,6 +42,7 @@ const linkClass =
   'text-primary font-medium underline-offset-4 hover:underline focus-visible:ring-ring rounded-sm focus-visible:ring-2 focus-visible:outline-none';
 
 export default function RegisterForm() {
+  useCaptureRedirect();
   const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
 
   const form = useForm<RegisterFormValues>({
