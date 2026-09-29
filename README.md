@@ -31,6 +31,7 @@ SquadUp is in early development.
 | --------------------------------------------------------------------------------------------------- | ---------- |
 | Landing page and design system                                                                      | Built      |
 | Accounts and security: passkeys, 2FA, Google sign-in, sessions                                      | Built      |
+| Signed-in app: shell, dashboard, profile and account settings, public profiles, notifications       | Built      |
 | Platform: staff and admin, feature flags, blogs, changelog, notifications, audit logs, file storage | Built      |
 | Production infrastructure: Docker, Caddy, monitoring, CI/CD                                         | Built      |
 | Operations console                                                                                  | Scaffolded |
