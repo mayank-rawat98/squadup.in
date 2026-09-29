@@ -53,23 +53,69 @@ export const FINGERPRINT_KEY_MAP: Record<
 
 /**
  * Every (emailType, audience) pair the application can send. Templates
- * themselves live in mailtr; this is only the catalogue an admin configures a
- * `templateId` against, plus the human label shown in the ops dashboard.
+ * themselves live in mailtr, and the templateId for each pair lives in the
+ * `email_templates` table, set by staff from the ops console. This is only the
+ * catalogue those rows are keyed on, plus what ops shows about each email.
  *
- * Adding a new transactional email = add an entry here, document it in
- * docs/emails.md and .env.example, then set its mailtr templateId through its
- * env var or the ops dashboard.
+ * Adding a new transactional email = add an entry here and in docs/emails.md.
+ * Its row is created when the API next boots; staff then set its templateId.
  */
 export interface EmailTemplateCatalogueEntry {
   emailType: string;
   audience: EMAIL_AUDIENCE;
   label: string;
+  /** When the email is sent, for whoever writes its template. */
+  description: string;
   /**
-   * Env var holding this email's mailtr templateId, used when the database row
-   * has none. Lets a deploy configure mail without the ops dashboard.
+   * The variables the send passes, besides EMAIL_BASE_VARIABLES. Ops lists
+   * them so the template can be written against the right names.
    */
-  envKey: string;
+  variables: readonly string[];
 }
+
+/** Variables every template receives, whatever the email. */
+export const EMAIL_BASE_VARIABLES: readonly string[] = [
+  'appName',
+  'appUrl',
+  'email',
+  'year',
+];
+
+const CONTACT_US_VARIABLES = [
+  'fullName',
+  'email',
+  'company',
+  'inquiryType',
+  'message',
+  'createdAtFormatted',
+  'ticketId',
+];
+const GRIEVANCE_VARIABLES = [
+  'ticketId',
+  'fullName',
+  'email',
+  'subject',
+  'description',
+  'grievanceType',
+  'createdAtFormatted',
+];
+const CAREER_VARIABLES = [
+  'fullName',
+  'email',
+  'message',
+  'ticketId',
+  'socialLinks',
+  'createdAtFormatted',
+];
+const FOLLOW_UP_VARIABLES = [
+  'formType',
+  'status',
+  'ticketId',
+  'inquiryType',
+  'assignedTo',
+  'name',
+  'summary',
+];
 
 export const EMAIL_TEMPLATE_CATALOGUE: ReadonlyArray<EmailTemplateCatalogueEntry> =
   [
@@ -78,91 +124,122 @@ export const EMAIL_TEMPLATE_CATALOGUE: ReadonlyArray<EmailTemplateCatalogueEntry
       emailType: EMAIL_TYPE_ENUM.WELCOME,
       audience: EMAIL_AUDIENCE.USER,
       label: 'Welcome / verify email on registration',
-      envKey: 'MAILTR_TEMPLATE_WELCOME',
+      description: 'An account is registered. Contains the verify-email link.',
+      variables: ['url'],
     },
     {
       emailType: EMAIL_TYPE_ENUM.EMAIL_VERIFICATION,
       audience: EMAIL_AUDIENCE.USER,
       label: 'Verify email address',
-      envKey: 'MAILTR_TEMPLATE_EMAIL_VERIFICATION',
+      description: 'A user asks for a new verification link.',
+      variables: ['url'],
     },
     {
       emailType: EMAIL_TYPE_ENUM.PASSWORD_RESET,
       audience: EMAIL_AUDIENCE.USER,
       label: 'Reset password',
-      envKey: 'MAILTR_TEMPLATE_PASSWORD_RESET',
+      description: '"Forgot password" is submitted.',
+      variables: ['url'],
     },
     {
       emailType: EMAIL_TYPE_ENUM.SENDER_EMAIL_OTP,
       audience: EMAIL_AUDIENCE.USER,
       label: 'Sender email verification OTP',
-      envKey: 'MAILTR_TEMPLATE_SENDER_EMAIL_OTP',
+      description: 'In the catalogue, but no code sends it yet.',
+      variables: [],
     },
     {
       emailType: EMAIL_TYPE_ENUM.EMAIL_CHANGE_OTP,
       audience: EMAIL_AUDIENCE.USER,
       label: 'Confirm new login email',
-      envKey: 'MAILTR_TEMPLATE_EMAIL_CHANGE_OTP',
+      description:
+        'A user changes their sign-in email. Sent to both addresses.',
+      variables: ['newEmail', 'otp'],
     },
     {
       emailType: EMAIL_TYPE_ENUM.EMAIL_CHANGE_NOTICE,
       audience: EMAIL_AUDIENCE.USER,
       label: 'Login email was changed',
-      envKey: 'MAILTR_TEMPLATE_EMAIL_CHANGE_NOTICE',
+      description:
+        'The email change is done. Sent to the old address; changedAt is ISO 8601.',
+      variables: ['oldEmail', 'newEmail', 'revertUrl', 'changedAt', 'ip'],
     },
     {
       emailType: EMAIL_TYPE_ENUM.TWO_FACTOR_OTP,
       audience: EMAIL_AUDIENCE.USER,
       label: 'Two-factor authentication code',
-      envKey: 'MAILTR_TEMPLATE_TWO_FACTOR_OTP',
+      description:
+        'A 6-digit code for sign-in, turning email 2FA on or off, or a password reset code.',
+      variables: ['otp'],
     },
     {
       emailType: EMAIL_TYPE_ENUM.AUTHENTICATOR_DISABLE_OTP,
       audience: EMAIL_AUDIENCE.USER,
       label: 'OTP to disable authenticator app',
-      envKey: 'MAILTR_TEMPLATE_AUTHENTICATOR_DISABLE_OTP',
+      description:
+        'A user lost their authenticator and asks for a recovery code.',
+      variables: ['otp'],
     },
     {
       emailType: EMAIL_TYPE_ENUM.ACCOUNT_SUSPENDED,
       audience: EMAIL_AUDIENCE.USER,
       label: 'Account suspended',
-      envKey: 'MAILTR_TEMPLATE_ACCOUNT_SUSPENDED',
+      description:
+        'Staff suspend an account. fullName is "there" when the user has none.',
+      variables: ['fullName', 'reason'],
     },
     {
       emailType: EMAIL_TYPE_ENUM.ORG_INVITE,
       audience: EMAIL_AUDIENCE.USER,
       label: 'Organisation invite',
-      envKey: 'MAILTR_TEMPLATE_ORG_INVITE',
+      description: 'In the catalogue, but no code sends it yet.',
+      variables: [],
     },
     {
       emailType: EMAIL_TYPE_ENUM.CONTACT_US,
       audience: EMAIL_AUDIENCE.USER,
       label: 'Contact-us acknowledgement',
-      envKey: 'MAILTR_TEMPLATE_CONTACT_US',
+      description: 'A contact form is submitted. Sent to the submitter.',
+      variables: [...CONTACT_US_VARIABLES, 'adminEmail'],
     },
     {
       emailType: EMAIL_TYPE_ENUM.GRIEVANCE,
       audience: EMAIL_AUDIENCE.USER,
       label: 'Grievance acknowledgement',
-      envKey: 'MAILTR_TEMPLATE_GRIEVANCE',
+      description: 'A grievance is submitted. Sent to the submitter.',
+      variables: [...GRIEVANCE_VARIABLES, 'adminEmail'],
     },
     {
       emailType: EMAIL_TYPE_ENUM.CAREER,
       audience: EMAIL_AUDIENCE.USER,
       label: 'Career application acknowledgement',
-      envKey: 'MAILTR_TEMPLATE_CAREER',
+      description: 'A career application is submitted. Sent to the applicant.',
+      variables: CAREER_VARIABLES,
     },
     {
       emailType: EMAIL_TYPE_ENUM.NEWSLETTER,
       audience: EMAIL_AUDIENCE.USER,
       label: 'Newsletter subscription confirmation',
-      envKey: 'MAILTR_TEMPLATE_NEWSLETTER',
+      description: 'Someone subscribes to the newsletter.',
+      variables: [
+        'name',
+        'email',
+        'subscribed',
+        'source',
+        'consentGiven',
+        'tags',
+        'unsubscribeToken',
+        'unsubscribeUrl',
+        'createdAtFormatted',
+        'adminEmail',
+      ],
     },
     {
       emailType: EMAIL_TYPE_ENUM.UNSUBSCRIBE_NEWSLETTER,
       audience: EMAIL_AUDIENCE.USER,
       label: 'Newsletter unsubscribe confirmation',
-      envKey: 'MAILTR_TEMPLATE_UNSUBSCRIBE_NEWSLETTER',
+      description: 'Someone unsubscribes from the newsletter.',
+      variables: ['name', 'resubscribeUrl'],
     },
 
     // ── Form follow-ups (status changes on a submitted ticket) ──────────────
@@ -170,25 +247,29 @@ export const EMAIL_TEMPLATE_CATALOGUE: ReadonlyArray<EmailTemplateCatalogueEntry
       emailType: FOLLOW_UP_EMAIL_TYPE.IN_PROGRESS,
       audience: EMAIL_AUDIENCE.USER,
       label: 'Follow-up — submission under review',
-      envKey: 'MAILTR_TEMPLATE_FOLLOW_UP_IN_PROGRESS',
+      description: 'Staff move a ticket to "in progress".',
+      variables: FOLLOW_UP_VARIABLES,
     },
     {
       emailType: FOLLOW_UP_EMAIL_TYPE.CLOSED,
       audience: EMAIL_AUDIENCE.USER,
       label: 'Follow-up — submission closed, no response',
-      envKey: 'MAILTR_TEMPLATE_FOLLOW_UP_CLOSED',
+      description: 'Staff close a ticket.',
+      variables: FOLLOW_UP_VARIABLES,
     },
     {
       emailType: FOLLOW_UP_EMAIL_TYPE.NEED_MORE_INFO,
       audience: EMAIL_AUDIENCE.USER,
       label: 'Follow-up — more information needed',
-      envKey: 'MAILTR_TEMPLATE_FOLLOW_UP_NEED_MORE_INFO',
+      description: 'Staff ask the submitter for more information.',
+      variables: FOLLOW_UP_VARIABLES,
     },
     {
       emailType: FOLLOW_UP_EMAIL_TYPE.RESOLVED,
       audience: EMAIL_AUDIENCE.USER,
       label: 'Follow-up — submission resolved',
-      envKey: 'MAILTR_TEMPLATE_FOLLOW_UP_RESOLVED',
+      description: 'Staff resolve a ticket.',
+      variables: FOLLOW_UP_VARIABLES,
     },
 
     // ── Admin/ops-facing ────────────────────────────────────────────────────
@@ -196,21 +277,45 @@ export const EMAIL_TEMPLATE_CATALOGUE: ReadonlyArray<EmailTemplateCatalogueEntry
       emailType: EMAIL_TYPE_ENUM.CONTACT_US,
       audience: EMAIL_AUDIENCE.ADMIN,
       label: 'New contact-us submission (to ops)',
-      envKey: 'MAILTR_TEMPLATE_CONTACT_US_ADMIN',
+      description: 'A contact form is submitted. Sent to the ops inbox.',
+      variables: [
+        ...CONTACT_US_VARIABLES,
+        'rawPayload',
+        'userEmail',
+        'dashboardUrl',
+      ],
     },
     {
       emailType: EMAIL_TYPE_ENUM.GRIEVANCE,
       audience: EMAIL_AUDIENCE.ADMIN,
       label: 'New grievance submission (to ops)',
-      envKey: 'MAILTR_TEMPLATE_GRIEVANCE_ADMIN',
+      description: 'A grievance is submitted. Sent to the ops inbox.',
+      variables: [...GRIEVANCE_VARIABLES, 'dashboardUrl'],
     },
     {
       emailType: EMAIL_TYPE_ENUM.CAREER,
       audience: EMAIL_AUDIENCE.ADMIN,
       label: 'New career submission (to ops)',
-      envKey: 'MAILTR_TEMPLATE_CAREER_ADMIN',
+      description: 'A career application is submitted. Sent to the ops inbox.',
+      variables: [...CAREER_VARIABLES, 'dashboardUrl'],
     },
   ];
+
+/** The catalogue entry for one (emailType, audience), if the app sends it. */
+export function findCatalogueEntry(
+  emailType: string,
+  audience: EMAIL_AUDIENCE,
+): EmailTemplateCatalogueEntry | undefined {
+  return EMAIL_TEMPLATE_CATALOGUE.find(
+    (e) => e.emailType === emailType && e.audience === audience,
+  );
+}
+
+/**
+ * A mailtr template identifier: `tpl_aB3xK9mZ` and the like. Checked on write
+ * so a pasted URL or a stray space never becomes a send that fails at mailtr.
+ */
+export const TEMPLATE_ID_PATTERN = /^[A-Za-z0-9_-]{1,128}$/;
 
 /** How long a resolved templateId mapping is cached in-process, in ms. */
 export const TEMPLATE_CACHE_TTL_MS = 60_000;

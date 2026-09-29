@@ -3,7 +3,10 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { StaffGuard } from '../../staff/guards/staff.guard';
 import { AdminOpsSecurityController } from './admin-ops-security.controller';
 import { AdminSecurityService } from '../../admin-security/admin-security.service';
-import type { HardBlockEntry, RateLimitConfig } from '../../admin-security/admin-security.service';
+import type {
+  HardBlockEntry,
+  RateLimitConfig,
+} from '../../admin-security/admin-security.service';
 import { IpParam } from '../../admin-security/dto/ip-param.dto';
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -50,7 +53,9 @@ describe('AdminOpsSecurityController', () => {
       .useValue({ canActivate: () => true })
       .compile();
 
-    controller = module.get<AdminOpsSecurityController>(AdminOpsSecurityController);
+    controller = module.get<AdminOpsSecurityController>(
+      AdminOpsSecurityController,
+    );
     service = module.get(AdminSecurityService);
     jest.clearAllMocks();
   });

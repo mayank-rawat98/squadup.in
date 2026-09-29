@@ -22,6 +22,13 @@ export interface FollowUpEmailParams {
   data?: EmailVariables;
 }
 
+export interface TestEmailParams {
+  recipient: string;
+  templateId: string;
+  fromEmail: string | null;
+  variables: EmailVariables;
+}
+
 export interface PreRenderedEmailParams {
   recipient: string;
   subject: string;
@@ -87,6 +94,23 @@ export class MailerService {
       EMAIL_AUDIENCE.USER,
       params.data,
     );
+  }
+
+  /**
+   * Send one template exactly as configured, whether or not its row is switched
+   * on, so staff can check a template before turning it on. Only the ops test
+   * send uses this; the recipient is always the staff member asking.
+   */
+  async sendTestEmail(params: TestEmailParams): Promise<boolean> {
+    return this.mailtr.sendTemplate({
+      to: [params.recipient],
+      templateId: params.templateId,
+      variables: {
+        ...MailerService.baseVariables(params.recipient),
+        ...params.variables,
+      },
+      from: params.fromEmail ?? undefined,
+    });
   }
 
   /**
