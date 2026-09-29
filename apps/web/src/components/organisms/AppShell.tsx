@@ -6,6 +6,7 @@ import { Menu, Search, X } from 'lucide-react';
 import { Drawer } from '@squadup.in/ui';
 import Logo from '@/components/atoms/Logo';
 import { UserMenu } from '@/components/molecules';
+import { NotificationBell } from '@/features/notifications';
 import AppSidebarNav from './AppSidebarNav';
 
 /*
@@ -88,6 +89,7 @@ function AppShell({ banner, children }: AppShellProps) {
             </button>
 
             <div className="ml-auto flex items-center gap-1 sm:ml-0 lg:ml-auto">
+              <NotificationBell />
               <UserMenu />
             </div>
           </div>
