@@ -56,130 +56,164 @@ export const FINGERPRINT_KEY_MAP: Record<
  * themselves live in mailtr; this is only the catalogue an admin configures a
  * `templateId` against, plus the human label shown in the ops dashboard.
  *
- * Adding a new transactional email = add an entry here, then set its mailtr
- * templateId from the ops dashboard. Nothing else in the code needs to change.
+ * Adding a new transactional email = add an entry here, document it in
+ * docs/emails.md and .env.example, then set its mailtr templateId through its
+ * env var or the ops dashboard.
  */
-export const EMAIL_TEMPLATE_CATALOGUE: ReadonlyArray<{
+export interface EmailTemplateCatalogueEntry {
   emailType: string;
   audience: EMAIL_AUDIENCE;
   label: string;
-}> = [
-  // ── User-facing ─────────────────────────────────────────────────────────
-  {
-    emailType: EMAIL_TYPE_ENUM.WELCOME,
-    audience: EMAIL_AUDIENCE.USER,
-    label: 'Welcome / verify email on registration',
-  },
-  {
-    emailType: EMAIL_TYPE_ENUM.EMAIL_VERIFICATION,
-    audience: EMAIL_AUDIENCE.USER,
-    label: 'Verify email address',
-  },
-  {
-    emailType: EMAIL_TYPE_ENUM.PASSWORD_RESET,
-    audience: EMAIL_AUDIENCE.USER,
-    label: 'Reset password',
-  },
-  {
-    emailType: EMAIL_TYPE_ENUM.SENDER_EMAIL_OTP,
-    audience: EMAIL_AUDIENCE.USER,
-    label: 'Sender email verification OTP',
-  },
-  {
-    emailType: EMAIL_TYPE_ENUM.EMAIL_CHANGE_OTP,
-    audience: EMAIL_AUDIENCE.USER,
-    label: 'Confirm new login email',
-  },
-  {
-    emailType: EMAIL_TYPE_ENUM.EMAIL_CHANGE_NOTICE,
-    audience: EMAIL_AUDIENCE.USER,
-    label: 'Login email was changed',
-  },
-  {
-    emailType: EMAIL_TYPE_ENUM.TWO_FACTOR_OTP,
-    audience: EMAIL_AUDIENCE.USER,
-    label: 'Two-factor authentication code',
-  },
-  {
-    emailType: EMAIL_TYPE_ENUM.AUTHENTICATOR_DISABLE_OTP,
-    audience: EMAIL_AUDIENCE.USER,
-    label: 'OTP to disable authenticator app',
-  },
-  {
-    emailType: EMAIL_TYPE_ENUM.ACCOUNT_SUSPENDED,
-    audience: EMAIL_AUDIENCE.USER,
-    label: 'Account suspended',
-  },
-  {
-    emailType: EMAIL_TYPE_ENUM.ORG_INVITE,
-    audience: EMAIL_AUDIENCE.USER,
-    label: 'Organisation invite',
-  },
-  {
-    emailType: EMAIL_TYPE_ENUM.CONTACT_US,
-    audience: EMAIL_AUDIENCE.USER,
-    label: 'Contact-us acknowledgement',
-  },
-  {
-    emailType: EMAIL_TYPE_ENUM.GRIEVANCE,
-    audience: EMAIL_AUDIENCE.USER,
-    label: 'Grievance acknowledgement',
-  },
-  {
-    emailType: EMAIL_TYPE_ENUM.CAREER,
-    audience: EMAIL_AUDIENCE.USER,
-    label: 'Career application acknowledgement',
-  },
-  {
-    emailType: EMAIL_TYPE_ENUM.NEWSLETTER,
-    audience: EMAIL_AUDIENCE.USER,
-    label: 'Newsletter subscription confirmation',
-  },
-  {
-    emailType: EMAIL_TYPE_ENUM.UNSUBSCRIBE_NEWSLETTER,
-    audience: EMAIL_AUDIENCE.USER,
-    label: 'Newsletter unsubscribe confirmation',
-  },
+  /**
+   * Env var holding this email's mailtr templateId, used when the database row
+   * has none. Lets a deploy configure mail without the ops dashboard.
+   */
+  envKey: string;
+}
 
-  // ── Form follow-ups (status changes on a submitted ticket) ──────────────
-  {
-    emailType: FOLLOW_UP_EMAIL_TYPE.IN_PROGRESS,
-    audience: EMAIL_AUDIENCE.USER,
-    label: 'Follow-up — submission under review',
-  },
-  {
-    emailType: FOLLOW_UP_EMAIL_TYPE.CLOSED,
-    audience: EMAIL_AUDIENCE.USER,
-    label: 'Follow-up — submission closed, no response',
-  },
-  {
-    emailType: FOLLOW_UP_EMAIL_TYPE.NEED_MORE_INFO,
-    audience: EMAIL_AUDIENCE.USER,
-    label: 'Follow-up — more information needed',
-  },
-  {
-    emailType: FOLLOW_UP_EMAIL_TYPE.RESOLVED,
-    audience: EMAIL_AUDIENCE.USER,
-    label: 'Follow-up — submission resolved',
-  },
+export const EMAIL_TEMPLATE_CATALOGUE: ReadonlyArray<EmailTemplateCatalogueEntry> =
+  [
+    // ── User-facing ─────────────────────────────────────────────────────────
+    {
+      emailType: EMAIL_TYPE_ENUM.WELCOME,
+      audience: EMAIL_AUDIENCE.USER,
+      label: 'Welcome / verify email on registration',
+      envKey: 'MAILTR_TEMPLATE_WELCOME',
+    },
+    {
+      emailType: EMAIL_TYPE_ENUM.EMAIL_VERIFICATION,
+      audience: EMAIL_AUDIENCE.USER,
+      label: 'Verify email address',
+      envKey: 'MAILTR_TEMPLATE_EMAIL_VERIFICATION',
+    },
+    {
+      emailType: EMAIL_TYPE_ENUM.PASSWORD_RESET,
+      audience: EMAIL_AUDIENCE.USER,
+      label: 'Reset password',
+      envKey: 'MAILTR_TEMPLATE_PASSWORD_RESET',
+    },
+    {
+      emailType: EMAIL_TYPE_ENUM.SENDER_EMAIL_OTP,
+      audience: EMAIL_AUDIENCE.USER,
+      label: 'Sender email verification OTP',
+      envKey: 'MAILTR_TEMPLATE_SENDER_EMAIL_OTP',
+    },
+    {
+      emailType: EMAIL_TYPE_ENUM.EMAIL_CHANGE_OTP,
+      audience: EMAIL_AUDIENCE.USER,
+      label: 'Confirm new login email',
+      envKey: 'MAILTR_TEMPLATE_EMAIL_CHANGE_OTP',
+    },
+    {
+      emailType: EMAIL_TYPE_ENUM.EMAIL_CHANGE_NOTICE,
+      audience: EMAIL_AUDIENCE.USER,
+      label: 'Login email was changed',
+      envKey: 'MAILTR_TEMPLATE_EMAIL_CHANGE_NOTICE',
+    },
+    {
+      emailType: EMAIL_TYPE_ENUM.TWO_FACTOR_OTP,
+      audience: EMAIL_AUDIENCE.USER,
+      label: 'Two-factor authentication code',
+      envKey: 'MAILTR_TEMPLATE_TWO_FACTOR_OTP',
+    },
+    {
+      emailType: EMAIL_TYPE_ENUM.AUTHENTICATOR_DISABLE_OTP,
+      audience: EMAIL_AUDIENCE.USER,
+      label: 'OTP to disable authenticator app',
+      envKey: 'MAILTR_TEMPLATE_AUTHENTICATOR_DISABLE_OTP',
+    },
+    {
+      emailType: EMAIL_TYPE_ENUM.ACCOUNT_SUSPENDED,
+      audience: EMAIL_AUDIENCE.USER,
+      label: 'Account suspended',
+      envKey: 'MAILTR_TEMPLATE_ACCOUNT_SUSPENDED',
+    },
+    {
+      emailType: EMAIL_TYPE_ENUM.ORG_INVITE,
+      audience: EMAIL_AUDIENCE.USER,
+      label: 'Organisation invite',
+      envKey: 'MAILTR_TEMPLATE_ORG_INVITE',
+    },
+    {
+      emailType: EMAIL_TYPE_ENUM.CONTACT_US,
+      audience: EMAIL_AUDIENCE.USER,
+      label: 'Contact-us acknowledgement',
+      envKey: 'MAILTR_TEMPLATE_CONTACT_US',
+    },
+    {
+      emailType: EMAIL_TYPE_ENUM.GRIEVANCE,
+      audience: EMAIL_AUDIENCE.USER,
+      label: 'Grievance acknowledgement',
+      envKey: 'MAILTR_TEMPLATE_GRIEVANCE',
+    },
+    {
+      emailType: EMAIL_TYPE_ENUM.CAREER,
+      audience: EMAIL_AUDIENCE.USER,
+      label: 'Career application acknowledgement',
+      envKey: 'MAILTR_TEMPLATE_CAREER',
+    },
+    {
+      emailType: EMAIL_TYPE_ENUM.NEWSLETTER,
+      audience: EMAIL_AUDIENCE.USER,
+      label: 'Newsletter subscription confirmation',
+      envKey: 'MAILTR_TEMPLATE_NEWSLETTER',
+    },
+    {
+      emailType: EMAIL_TYPE_ENUM.UNSUBSCRIBE_NEWSLETTER,
+      audience: EMAIL_AUDIENCE.USER,
+      label: 'Newsletter unsubscribe confirmation',
+      envKey: 'MAILTR_TEMPLATE_UNSUBSCRIBE_NEWSLETTER',
+    },
 
-  // ── Admin/ops-facing ────────────────────────────────────────────────────
-  {
-    emailType: EMAIL_TYPE_ENUM.CONTACT_US,
-    audience: EMAIL_AUDIENCE.ADMIN,
-    label: 'New contact-us submission (to ops)',
-  },
-  {
-    emailType: EMAIL_TYPE_ENUM.GRIEVANCE,
-    audience: EMAIL_AUDIENCE.ADMIN,
-    label: 'New grievance submission (to ops)',
-  },
-  {
-    emailType: EMAIL_TYPE_ENUM.CAREER,
-    audience: EMAIL_AUDIENCE.ADMIN,
-    label: 'New career submission (to ops)',
-  },
-];
+    // ── Form follow-ups (status changes on a submitted ticket) ──────────────
+    {
+      emailType: FOLLOW_UP_EMAIL_TYPE.IN_PROGRESS,
+      audience: EMAIL_AUDIENCE.USER,
+      label: 'Follow-up — submission under review',
+      envKey: 'MAILTR_TEMPLATE_FOLLOW_UP_IN_PROGRESS',
+    },
+    {
+      emailType: FOLLOW_UP_EMAIL_TYPE.CLOSED,
+      audience: EMAIL_AUDIENCE.USER,
+      label: 'Follow-up — submission closed, no response',
+      envKey: 'MAILTR_TEMPLATE_FOLLOW_UP_CLOSED',
+    },
+    {
+      emailType: FOLLOW_UP_EMAIL_TYPE.NEED_MORE_INFO,
+      audience: EMAIL_AUDIENCE.USER,
+      label: 'Follow-up — more information needed',
+      envKey: 'MAILTR_TEMPLATE_FOLLOW_UP_NEED_MORE_INFO',
+    },
+    {
+      emailType: FOLLOW_UP_EMAIL_TYPE.RESOLVED,
+      audience: EMAIL_AUDIENCE.USER,
+      label: 'Follow-up — submission resolved',
+      envKey: 'MAILTR_TEMPLATE_FOLLOW_UP_RESOLVED',
+    },
+
+    // ── Admin/ops-facing ────────────────────────────────────────────────────
+    {
+      emailType: EMAIL_TYPE_ENUM.CONTACT_US,
+      audience: EMAIL_AUDIENCE.ADMIN,
+      label: 'New contact-us submission (to ops)',
+      envKey: 'MAILTR_TEMPLATE_CONTACT_US_ADMIN',
+    },
+    {
+      emailType: EMAIL_TYPE_ENUM.GRIEVANCE,
+      audience: EMAIL_AUDIENCE.ADMIN,
+      label: 'New grievance submission (to ops)',
+      envKey: 'MAILTR_TEMPLATE_GRIEVANCE_ADMIN',
+    },
+    {
+      emailType: EMAIL_TYPE_ENUM.CAREER,
+      audience: EMAIL_AUDIENCE.ADMIN,
+      label: 'New career submission (to ops)',
+      envKey: 'MAILTR_TEMPLATE_CAREER_ADMIN',
+    },
+  ];
 
 /** How long a resolved templateId mapping is cached in-process, in ms. */
 export const TEMPLATE_CACHE_TTL_MS = 60_000;
+
+/** Product name sent to every template as the `appName` variable. */
+export const EMAIL_APP_NAME = 'SquadUp';
