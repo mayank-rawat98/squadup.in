@@ -430,8 +430,8 @@ screen alongside the feature it manages; this milestone covers what's left.
 - ✅ Staff sign in and the console shell: sign in, sign out (this device or
   every device), and the sidebar. No sign-up: staff create staff.
 - ⬜ Users: search, view, suspend or restore, audit log.
-- ⬜ Email templates: map each email type to a Mailtr `templateId`
-  (`admin-ops/email-templates`).
+- ✅ Email templates: map each email type to a Mailtr `templateId`, switch
+  it on or off, and send a test to yourself (`admin-ops/email-templates`).
 - ⬜ Feature flags, blogs, changelog, and contact/grievance inbox (all
   existing API modules).
 - ⬜ Content: problems (Milestone 3), arenas and proctoring review
