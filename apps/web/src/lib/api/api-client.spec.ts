@@ -224,6 +224,35 @@ describe('createApiClient', () => {
     expect(onSessionExpired).not.toHaveBeenCalled();
   });
 
+  it('sends FormData as multipart, leaving the Content-Type to the browser', async () => {
+    const { client, fetchMock } = setup(async () =>
+      json(200, { success: true, data: null, message: '' }),
+    );
+    const form = new FormData();
+    form.append('file', new Blob(['x'], { type: 'image/png' }), 'a.png');
+
+    await client.request('/users/me/avatar', { method: 'PATCH', body: form });
+
+    const [, init] = fetchMock.mock.calls[0];
+    expect(init.body).toBe(form);
+    expect(header(init, 'Content-Type')).toBeUndefined();
+  });
+
+  it('sends other bodies as JSON', async () => {
+    const { client, fetchMock } = setup(async () =>
+      json(200, { success: true, data: null, message: '' }),
+    );
+
+    await client.request('/users', {
+      method: 'PATCH',
+      body: { fullName: 'A' },
+    });
+
+    const [, init] = fetchMock.mock.calls[0];
+    expect(init.body).toBe('{"fullName":"A"}');
+    expect(header(init, 'Content-Type')).toBe('application/json');
+  });
+
   it('resolves a 204 without a body', async () => {
     const { client } = setup(async () => new Response(null, { status: 204 }));
 
