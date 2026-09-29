@@ -2,6 +2,7 @@ import {
   changePasswordSchema,
   emailChangeSchema,
   profileSchema,
+  usernameSchema,
 } from './account.schema';
 
 describe('profileSchema', () => {
@@ -49,5 +50,17 @@ describe('emailChangeSchema', () => {
       schema.safeParse({ newEmail: 'new@example.com', preauthOtp: '123456' })
         .success,
     ).toBe(true);
+  });
+});
+
+describe('usernameSchema', () => {
+  it('trims and lowercases like the API', () => {
+    expect(usernameSchema.parse({ username: ' Asha_V ' })).toEqual({
+      username: 'asha_v',
+    });
+  });
+
+  it.each(['ab', '9lives', 'asha v', 'a'.repeat(31)])('rejects %s', (name) => {
+    expect(usernameSchema.safeParse({ username: name }).success).toBe(false);
   });
 });

@@ -3,8 +3,11 @@ import {
   Body,
   Controller,
   Delete,
+  Get,
+  Param,
   Patch,
   Post,
+  Query,
   Request,
   UploadedFile,
   UseGuards,
@@ -17,6 +20,7 @@ import { UploadFileInterceptor } from '../common/interceptors/upload.interceptor
 import { Public } from '../decorators/guards.decorator';
 import {
   EmailRateLimit,
+  PublicRateLimit,
   SensitiveRateLimit,
   UploadRateLimit,
   UserRateLimit,
@@ -27,11 +31,13 @@ import { VerifyResetCodeDto } from './dto/verify-reset-code.dto';
 import { CompletePasswordResetDto } from './dto/complete-password-reset.dto';
 import { SetPasswordDto } from './dto/set-password.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UsernameQueryDto } from './dto/username.dto';
 import {
   ForgotPasswordDocs,
   ResetPasswordDocs,
   SendEmailVerificationLinkDocs,
   SendForgotPasswordEmailDocs,
+  PublicProfileDocs,
   UpdateUserDocs,
   VerifyEmailLinkDocs,
 } from './swagger/users.swagger';
@@ -46,6 +52,35 @@ import { UsersService } from './users.service';
 @UserRateLimit()
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
+
+  @Get('username-availability')
+  @PublicProfileDocs.availability
+  async usernameAvailability(
+    @Query() query: UsernameQueryDto,
+    @Request() req: ExpressRequest,
+  ) {
+    return {
+      success: true,
+      data: await this.usersService.checkUsernameAvailability(
+        req.auth.userId,
+        query.username,
+      ),
+      message: 'Username availability checked',
+    };
+  }
+
+  /** Anyone, signed in or not, can view a profile by its username. */
+  @Public()
+  @PublicRateLimit()
+  @Get('public/:username')
+  @PublicProfileDocs.profile
+  async publicProfile(@Param() params: UsernameQueryDto) {
+    return {
+      success: true,
+      data: await this.usersService.getPublicProfile(params.username),
+      message: 'Profile fetched successfully',
+    };
+  }
 
   @Patch('me/avatar')
   @UploadRateLimit()

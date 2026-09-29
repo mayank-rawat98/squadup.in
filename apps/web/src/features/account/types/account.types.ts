@@ -34,3 +34,10 @@ export interface EmailChangeRequest {
   /** Code sent to the current email, for accounts without a password. */
   preauthOtp?: string;
 }
+
+/** `GET /users/username-availability`. */
+export interface UsernameAvailability {
+  username: string;
+  available: boolean;
+  reason: 'reserved' | 'taken' | null;
+}

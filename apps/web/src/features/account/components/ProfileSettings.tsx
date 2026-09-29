@@ -4,6 +4,7 @@ import { Typography } from '@squadup.in/ui';
 import { useCurrentUser } from '@/features/auth';
 import AvatarCard from './AvatarCard';
 import ProfileNameForm from './ProfileNameForm';
+import UsernameCard from './UsernameCard';
 
 /* /settings/profile. RequireAuth has already loaded the user. */
 export default function ProfileSettings() {
@@ -22,6 +23,7 @@ export default function ProfileSettings() {
       </header>
       <AvatarCard user={user} />
       <ProfileNameForm user={user} />
+      <UsernameCard user={user} />
     </div>
   );
 }
