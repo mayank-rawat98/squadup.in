@@ -16,12 +16,7 @@ export interface OpsNavItem {
 
 export const OPS_NAV: readonly OpsNavItem[] = [
   { label: 'Home', href: '/', icon: House },
-  {
-    label: 'Email templates',
-    href: '/email-templates',
-    icon: Mail,
-    comingSoon: true,
-  },
+  { label: 'Email templates', href: '/email-templates', icon: Mail },
   { label: 'Users', href: '/users', icon: Users, comingSoon: true },
   {
     label: 'Feature flags',
