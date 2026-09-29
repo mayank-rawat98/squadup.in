@@ -25,3 +25,16 @@ export const STAFF_JWT_REFRESH_TTL_MIN = 60 * 24 * 7;
 
 /** Cost factor for hashing staff passwords. */
 export const STAFF_PASSWORD_SALT_ROUNDS = 12;
+
+/**
+ * The staff refresh token travels only in this HttpOnly cookie, never in a
+ * response body, so script on the ops page can't read it. Its own name keeps
+ * it apart from the customer `refresh` cookie on the same API host.
+ */
+export const STAFF_REFRESH_COOKIE = 'staff_refresh';
+
+/**
+ * Sent only to the staff auth routes (refresh and logout), not with every
+ * request to the API.
+ */
+export const STAFF_REFRESH_COOKIE_PATH = '/api/v1/staff/auth';

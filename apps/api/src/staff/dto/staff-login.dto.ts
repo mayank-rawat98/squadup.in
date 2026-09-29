@@ -21,10 +21,3 @@ export class StaffLoginDto {
   @MaxLength(128)
   password!: string;
 }
-
-export class StaffRefreshDto {
-  @ApiProperty({ description: 'The refresh token issued at login' })
-  @IsString()
-  @IsNotEmpty()
-  refreshToken!: string;
-}
