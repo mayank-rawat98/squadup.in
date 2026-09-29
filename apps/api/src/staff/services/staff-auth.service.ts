@@ -7,7 +7,11 @@ import { StaffJwtService } from './staff-jwt.service';
 
 export interface StaffSession {
   accessToken: string;
+  /** Access token lifetime, in seconds. */
+  expiresIn: number;
   refreshToken: string;
+  /** Refresh token lifetime, in seconds; the cookie's max age. */
+  refreshExpiresIn: number;
   deviceId: string;
   staff: Staff;
 }
@@ -91,7 +95,9 @@ export class StaffAuthService {
 
     return {
       accessToken: access.token,
+      expiresIn: this.jwt.ACCESS_TTL_SECONDS,
       refreshToken: refresh.token,
+      refreshExpiresIn: this.jwt.REFRESH_TTL_SECONDS,
       deviceId,
       staff,
     };
