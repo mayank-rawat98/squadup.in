@@ -41,9 +41,7 @@ export class EmailTemplateRepository {
       Object.assign(existing, patch);
       return this.repo.save(existing);
     }
-    return this.repo.save(
-      this.repo.create({ emailType, audience, ...patch }),
-    );
+    return this.repo.save(this.repo.create({ emailType, audience, ...patch }));
   }
 
   /** Create any catalogue entries missing from the table, leaving the rest untouched. */

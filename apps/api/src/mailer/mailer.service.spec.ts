@@ -132,4 +132,29 @@ describe('MailerService', () => {
       }),
     ).resolves.toBe(false);
   });
+
+  it('sends a test with the given template even though nothing was resolved', async () => {
+    await expect(
+      service.sendTestEmail({
+        recipient: 'ops@squadup.in',
+        templateId: 'tpl_test',
+        fromEmail: 'hello@squadup.in',
+        variables: { otp: '000000' },
+      }),
+    ).resolves.toBe(true);
+
+    expect(templates.resolveTemplateId).not.toHaveBeenCalled();
+    expect(mailtr.sendTemplate).toHaveBeenCalledWith({
+      to: ['ops@squadup.in'],
+      templateId: 'tpl_test',
+      from: 'hello@squadup.in',
+      variables: {
+        appName: 'SquadUp',
+        appUrl: 'https://squadup.test',
+        email: 'ops@squadup.in',
+        year: '2026',
+        otp: '000000',
+      },
+    });
+  });
 });

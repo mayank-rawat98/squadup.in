@@ -217,6 +217,11 @@ export const AUDIT_ACTIONS = {
     PERMISSION_DENIED: 'AUTHORIZATION_PERMISSION_DENIED',
     MAILBOX_ACCESS_CHANGED: 'ORG_MEMBER_MAILBOX_ACCESS_CHANGED',
   },
+  /** Staff changing which mailtr template an email uses, from ops. */
+  EMAIL_TEMPLATE: {
+    UPDATED: 'EMAIL_TEMPLATE_UPDATED',
+    TEST_SENT: 'EMAIL_TEMPLATE_TEST_SENT',
+  },
   BILLING: {
     CUSTOMER_CREATED: 'BILLING_CUSTOMER_CREATED',
     SUBSCRIPTION_CREATED: 'BILLING_SUBSCRIPTION_CREATED',
@@ -234,6 +239,7 @@ export const AUDIT_RESOURCE = {
   EMAIL: 'Email',
   CAMPAIGN: 'Campaign',
   TEMPLATE: 'Template',
+  EMAIL_TEMPLATE: 'EmailTemplate',
   CONTACT: 'Contact',
   COMPANY: 'Company',
   LIST: 'List',
