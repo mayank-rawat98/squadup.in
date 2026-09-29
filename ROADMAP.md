@@ -44,7 +44,7 @@ Status legend: ✅ Done · 🚧 In progress · ⬜ Not started
 | 4   | [Arenas and proctoring](#milestone-4-arenas-and-proctoring)                       | ⬜     |
 | 5   | [Coding board](#milestone-5-coding-board)                                         | ⬜     |
 | 6   | [Rewards store](#milestone-6-rewards-store)                                       | ⬜     |
-| 7   | [Operations console](#milestone-7-operations-console)                             | ⬜     |
+| 7   | [Operations console](#milestone-7-operations-console)                             | 🚧     |
 
 ---
 
@@ -427,7 +427,8 @@ products made by SquadUp**, alongside goodies such as jackets and bottles.
 **Goal:** everything staff need to run SquadUp, in `apps/ops`. Build each
 screen alongside the feature it manages; this milestone covers what's left.
 
-- ⬜ Staff sign in (separate staff realm, already in the API).
+- ✅ Staff sign in and the console shell: sign in, sign out (this device or
+  every device), and the sidebar. No sign-up: staff create staff.
 - ⬜ Users: search, view, suspend or restore, audit log.
 - ⬜ Email templates: map each email type to a Mailtr `templateId`
   (`admin-ops/email-templates`).
