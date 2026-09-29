@@ -1,4 +1,4 @@
-import { ConfigService } from '@nestjs/config';
+import { NotFoundException } from '@nestjs/common';
 import {
   EMAIL_AUDIENCE,
   EMAIL_TEMPLATE_CATALOGUE,
@@ -24,32 +24,32 @@ const row = (patch: Partial<EmailTemplate>): EmailTemplate =>
 
 describe('EmailTemplateService', () => {
   let repository: jest.Mocked<
-    Pick<EmailTemplateRepository, 'findOneByKey' | 'findAll'>
+    Pick<
+      EmailTemplateRepository,
+      'findOneByKey' | 'findAll' | 'upsert' | 'insertMissing'
+    >
   >;
-  let env: Record<string, string | undefined>;
   let service: EmailTemplateService;
 
   beforeEach(() => {
     repository = {
       findOneByKey: jest.fn().mockResolvedValue(null),
       findAll: jest.fn().mockResolvedValue([]),
+      upsert: jest.fn(async (emailType, audience, patch) =>
+        row({ emailType, audience, ...patch }),
+      ),
+      insertMissing: jest.fn().mockResolvedValue(0),
     };
-    env = {};
-    const configService = {
-      get: jest.fn((key: string) => env[key]),
-    } as unknown as ConfigService;
     service = new EmailTemplateService(
       repository as unknown as EmailTemplateRepository,
-      configService,
     );
   });
 
   describe('resolveTemplateId', () => {
-    it('uses the database templateId when the row has one', async () => {
+    it('uses the templateId and sender on the row', async () => {
       repository.findOneByKey.mockResolvedValue(
         row({ templateId: 'tpl_db', fromEmail: 'hello@squadup.in' }),
       );
-      env.MAILTR_TEMPLATE_WELCOME = 'tpl_env';
 
       await expect(
         service.resolveTemplateId(EMAIL_TYPE_ENUM.WELCOME, EMAIL_AUDIENCE.USER),
@@ -59,96 +59,141 @@ describe('EmailTemplateService', () => {
       });
     });
 
-    it('falls back to the env var when there is no row', async () => {
-      env.MAILTR_TEMPLATE_WELCOME = 'tpl_env';
+    it('returns null when there is no row', async () => {
+      await expect(
+        service.resolveTemplateId(EMAIL_TYPE_ENUM.WELCOME, EMAIL_AUDIENCE.USER),
+      ).resolves.toBeNull();
+    });
+
+    it('returns null when the row has no templateId', async () => {
+      repository.findOneByKey.mockResolvedValue(row({ templateId: null }));
 
       await expect(
         service.resolveTemplateId(EMAIL_TYPE_ENUM.WELCOME, EMAIL_AUDIENCE.USER),
-      ).resolves.toEqual({ templateId: 'tpl_env', fromEmail: null });
+      ).resolves.toBeNull();
     });
 
-    it('falls back to the env var and keeps the row sender when the row has no templateId', async () => {
-      repository.findOneByKey.mockResolvedValue(
-        row({ fromEmail: 'hello@squadup.in' }),
-      );
-      env.MAILTR_TEMPLATE_WELCOME = 'tpl_env';
-
-      await expect(
-        service.resolveTemplateId(EMAIL_TYPE_ENUM.WELCOME, EMAIL_AUDIENCE.USER),
-      ).resolves.toEqual({
-        templateId: 'tpl_env',
-        fromEmail: 'hello@squadup.in',
-      });
-    });
-
-    it('suppresses the send when the row is deactivated, even with an env var', async () => {
+    it('returns null when the row is switched off', async () => {
       repository.findOneByKey.mockResolvedValue(
         row({ templateId: 'tpl_db', isActive: false }),
       );
-      env.MAILTR_TEMPLATE_WELCOME = 'tpl_env';
 
       await expect(
         service.resolveTemplateId(EMAIL_TYPE_ENUM.WELCOME, EMAIL_AUDIENCE.USER),
       ).resolves.toBeNull();
     });
 
-    it('returns null when neither the row nor the env var sets a templateId', async () => {
-      env.MAILTR_TEMPLATE_WELCOME = '   ';
-
-      await expect(
-        service.resolveTemplateId(EMAIL_TYPE_ENUM.WELCOME, EMAIL_AUDIENCE.USER),
-      ).resolves.toBeNull();
+    it('never reads a MAILTR_TEMPLATE_* env var', async () => {
+      process.env.MAILTR_TEMPLATE_WELCOME = 'tpl_env';
+      try {
+        await expect(
+          service.resolveTemplateId(
+            EMAIL_TYPE_ENUM.WELCOME,
+            EMAIL_AUDIENCE.USER,
+          ),
+        ).resolves.toBeNull();
+      } finally {
+        delete process.env.MAILTR_TEMPLATE_WELCOME;
+      }
     });
 
-    it('reads the admin env var for the admin audience', async () => {
-      env.MAILTR_TEMPLATE_CONTACT_US = 'tpl_user';
-      env.MAILTR_TEMPLATE_CONTACT_US_ADMIN = 'tpl_admin';
-
+    it('returns null for an email type the catalogue does not list', async () => {
       await expect(
-        service.resolveTemplateId(
-          EMAIL_TYPE_ENUM.CONTACT_US,
-          EMAIL_AUDIENCE.ADMIN,
-        ),
-      ).resolves.toEqual({ templateId: 'tpl_admin', fromEmail: null });
+        service.resolveTemplateId('made_up', EMAIL_AUDIENCE.USER),
+      ).resolves.toBeNull();
+      expect(repository.findOneByKey).not.toHaveBeenCalled();
+    });
+
+    it('serves a repeat lookup from the cache', async () => {
+      repository.findOneByKey.mockResolvedValue(row({ templateId: 'tpl_db' }));
+
+      await service.resolveTemplateId(
+        EMAIL_TYPE_ENUM.WELCOME,
+        EMAIL_AUDIENCE.USER,
+      );
+      await service.resolveTemplateId(
+        EMAIL_TYPE_ENUM.WELCOME,
+        EMAIL_AUDIENCE.USER,
+      );
+
+      expect(repository.findOneByKey).toHaveBeenCalledTimes(1);
     });
   });
 
-  describe('listForAdmin', () => {
-    it('reports where each templateId comes from', async () => {
+  describe('update', () => {
+    it('saves the patch with the catalogue label and clears the cached lookup', async () => {
+      repository.findOneByKey.mockResolvedValue(row({ templateId: 'tpl_old' }));
+      await service.resolveTemplateId(
+        EMAIL_TYPE_ENUM.WELCOME,
+        EMAIL_AUDIENCE.USER,
+      );
+
+      await service.update(EMAIL_TYPE_ENUM.WELCOME, EMAIL_AUDIENCE.USER, {
+        templateId: 'tpl_new',
+      });
+      repository.findOneByKey.mockResolvedValue(row({ templateId: 'tpl_new' }));
+
+      expect(repository.upsert).toHaveBeenCalledWith(
+        EMAIL_TYPE_ENUM.WELCOME,
+        EMAIL_AUDIENCE.USER,
+        {
+          templateId: 'tpl_new',
+          label: 'Welcome / verify email on registration',
+        },
+      );
+      await expect(
+        service.resolveTemplateId(EMAIL_TYPE_ENUM.WELCOME, EMAIL_AUDIENCE.USER),
+      ).resolves.toEqual({ templateId: 'tpl_new', fromEmail: null });
+    });
+
+    it('refuses an email type the catalogue does not list', async () => {
+      await expect(
+        service.update('made_up', EMAIL_AUDIENCE.USER, { templateId: 'tpl' }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+      expect(repository.upsert).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('list', () => {
+    it('returns every catalogue entry, with its row where one exists', async () => {
       repository.findAll.mockResolvedValue([row({ templateId: 'tpl_db' })]);
-      env.MAILTR_TEMPLATE_PASSWORD_RESET = 'tpl_env';
 
-      const list = await service.listForAdmin();
-      const byType = (emailType: string) =>
-        list.find(
-          (e) =>
-            e.emailType === emailType && e.audience === EMAIL_AUDIENCE.USER,
-        );
+      const list = await service.list();
 
-      expect(byType(EMAIL_TYPE_ENUM.WELCOME)).toMatchObject({
-        templateId: 'tpl_db',
-        source: 'database',
-        configured: true,
-      });
-      expect(byType(EMAIL_TYPE_ENUM.PASSWORD_RESET)).toMatchObject({
-        templateId: 'tpl_env',
-        source: 'env',
-        configured: true,
-        envKey: 'MAILTR_TEMPLATE_PASSWORD_RESET',
-      });
-      expect(byType(EMAIL_TYPE_ENUM.TWO_FACTOR_OTP)).toMatchObject({
-        templateId: null,
-        source: null,
-        configured: false,
-      });
+      expect(list).toHaveLength(EMAIL_TEMPLATE_CATALOGUE.length);
+      const welcome = list.find(
+        (r) =>
+          r.entry.emailType === EMAIL_TYPE_ENUM.WELCOME &&
+          r.entry.audience === EMAIL_AUDIENCE.USER,
+      );
+      const reset = list.find(
+        (r) => r.entry.emailType === EMAIL_TYPE_ENUM.PASSWORD_RESET,
+      );
+      expect(welcome?.row?.templateId).toBe('tpl_db');
+      expect(reset?.row).toBeNull();
     });
   });
 
-  it('gives every catalogue entry its own env var', () => {
-    const keys = EMAIL_TEMPLATE_CATALOGUE.map((e) => e.envKey);
+  describe('onApplicationBootstrap', () => {
+    it('creates rows for catalogue entries that have none', async () => {
+      await service.onApplicationBootstrap();
+
+      expect(repository.insertMissing).toHaveBeenCalledWith(
+        EMAIL_TEMPLATE_CATALOGUE,
+      );
+    });
+
+    it('does not stop the API booting when the sync fails', async () => {
+      repository.insertMissing.mockRejectedValue(new Error('db down'));
+
+      await expect(service.onApplicationBootstrap()).resolves.toBeUndefined();
+    });
+  });
+
+  it('lists each (emailType, audience) once in the catalogue', () => {
+    const keys = EMAIL_TEMPLATE_CATALOGUE.map(
+      (e) => `${e.emailType}:${e.audience}`,
+    );
     expect(new Set(keys).size).toBe(keys.length);
-    for (const key of keys) {
-      expect(key).toMatch(/^MAILTR_TEMPLATE_[A-Z_]+$/);
-    }
   });
 });

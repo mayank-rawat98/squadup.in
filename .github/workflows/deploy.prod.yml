@@ -140,9 +140,10 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/${{ env.DOCKER_REPOSITORY }}/squadup-${{ matrix.service }}:latest
             ${{ env.REGISTRY }}/${{ env.DOCKER_REPOSITORY }}/squadup-${{ matrix.service }}:${{ github.sha }}
-          # Compiled into the web bundle at build time (see docker/web/Dockerfile).
-          # Public values, so repository variables; a secret of the same name
-          # works too. The api and ops images don't declare these and ignore them.
+          # Compiled into the web and ops bundles at build time (see
+          # docker/web/Dockerfile and docker/ops/Dockerfile). Public values, so
+          # repository variables; a secret of the same name works too. Ops uses
+          # only the API URL, and the api image declares neither.
           build-args: |
             NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL || secrets.NEXT_PUBLIC_API_URL }}
             NEXT_PUBLIC_GOOGLE_CLIENT_ID=${{ vars.NEXT_PUBLIC_GOOGLE_CLIENT_ID || secrets.NEXT_PUBLIC_GOOGLE_CLIENT_ID }}

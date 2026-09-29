@@ -46,6 +46,9 @@ services:
       context: .
       dockerfile: ./docker/ops/Dockerfile
       target: production
+      # Compiled into the browser bundle at build time; see docker/ops/Dockerfile.
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-}
     restart: unless-stopped
     profiles:
       - production
