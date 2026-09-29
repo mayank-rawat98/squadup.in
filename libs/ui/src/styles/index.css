@@ -55,6 +55,7 @@
 
   --color-popover: hsl(var(--popover));
   --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-overlay: hsl(var(--overlay));
 
   --color-primary: hsl(var(--primary));
   --color-primary-foreground: hsl(var(--primary-foreground));
@@ -292,6 +293,8 @@
 
     --popover: 0 0% 100%;
     --popover-foreground: 260 30% 10%;
+    /* The scrim behind a drawer or dialog. Dark in both themes. */
+    --overlay: 260 30% 8%;
 
     /* Brand purple. */
     --primary: 262 83% 58%;
@@ -435,6 +438,7 @@
 
     --popover: 260 25% 11%;
     --popover-foreground: 260 20% 97%;
+    --overlay: 260 40% 2%;
 
     --primary: 262 83% 68%;
     --primary-foreground: 260 30% 8%;

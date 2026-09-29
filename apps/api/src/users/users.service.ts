@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   Logger,
   NotFoundException,
@@ -42,6 +43,11 @@ import { SetPasswordDto } from './dto/set-password.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { AccountStatus, User } from './entities/user.entity';
 import { UsersRepository } from './users.repository';
+import {
+  RESERVED_USERNAMES,
+  type UsernameUnavailableReason,
+} from './constants/username.constants';
+import { type PublicProfile, toPublicProfile } from './user-public.presenter';
 export const USER_AVATARS_BUCKET = 'user-avatars';
 
 @Injectable()
@@ -267,6 +273,23 @@ export class UsersService {
       accountStatus?: AccountStatus;
     },
   ) {
+    if (updateUserDto.username !== undefined) {
+      const reason = await this.usernameUnavailableReason(
+        id,
+        updateUserDto.username,
+      );
+      if (reason === 'reserved') {
+        throw new BadRequestException(
+          'That username is reserved. Choose another one.',
+        );
+      }
+      if (reason === 'taken') {
+        throw new ConflictException(
+          'That username is taken. Choose another one.',
+        );
+      }
+    }
+
     const user = await this.userRepository.updateUser(id, updateUserDto);
     if (!user) {
       throw new BadRequestException('Unable to update user');
@@ -286,6 +309,47 @@ export class UsersService {
     );
 
     return user;
+  }
+
+  /**
+   * Whether `username` (already normalised by the DTO) is free for this user.
+   * Their own current username counts as available.
+   */
+  async checkUsernameAvailability(
+    userId: string,
+    username: string,
+  ): Promise<{
+    username: string;
+    available: boolean;
+    reason: UsernameUnavailableReason | null;
+  }> {
+    const reason = await this.usernameUnavailableReason(userId, username);
+    return { username, available: reason === null, reason };
+  }
+
+  /**
+   * The public face of an account. Suspended and closed accounts read as not
+   * found, so a profile page can't confirm they exist.
+   */
+  async getPublicProfile(username: string): Promise<PublicProfile> {
+    const user = await this.userRepository.findByUsername(username);
+    const hidden =
+      !user ||
+      user.accountStatus === AccountStatus.SUSPENDED ||
+      user.accountStatus === AccountStatus.CLOSED;
+    if (hidden) {
+      throw new NotFoundException('No one on SquadUp has that username.');
+    }
+    return toPublicProfile(user);
+  }
+
+  private async usernameUnavailableReason(
+    userId: string,
+    username: string,
+  ): Promise<UsernameUnavailableReason | null> {
+    if (RESERVED_USERNAMES.has(username)) return 'reserved';
+    const owner = await this.userRepository.findByUsername(username);
+    return owner && owner.id !== userId ? 'taken' : null;
   }
 
   async softDeleteUser(id: string) {

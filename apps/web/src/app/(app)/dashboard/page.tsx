@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { Container } from '@squadup.in/ui';
-import { DashboardPlaceholder } from '@/features/dashboard';
+import { DashboardHome } from '@/features/dashboard';
 
 export const metadata: Metadata = {
   title: 'Dashboard',
@@ -8,8 +8,8 @@ export const metadata: Metadata = {
 
 export default function DashboardPage() {
   return (
-    <Container className="py-10 md:py-14">
-      <DashboardPlaceholder />
+    <Container className="py-8 md:py-12">
+      <DashboardHome />
     </Container>
   );
 }

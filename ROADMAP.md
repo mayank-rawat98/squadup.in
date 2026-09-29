@@ -39,7 +39,7 @@ Status legend: ✅ Done · 🚧 In progress · ⬜ Not started
 | #   | Milestone                                                                         | Status |
 | --- | --------------------------------------------------------------------------------- | ------ |
 | 1   | [Authentication pages](#milestone-1-authentication-pages)                         | ✅     |
-| 2   | [App shell, dashboard and profile](#milestone-2-app-shell-dashboard-and-profile)  | ⬜     |
+| 2   | [App shell, dashboard and profile](#milestone-2-app-shell-dashboard-and-profile)  | ✅     |
 | 3   | [Solo challenges and leaderboards](#milestone-3-solo-challenges-and-leaderboards) | ⬜     |
 | 4   | [Arenas and proctoring](#milestone-4-arenas-and-proctoring)                       | ⬜     |
 | 5   | [Coding board](#milestone-5-coding-board)                                         | ⬜     |
@@ -147,7 +147,7 @@ Do these first; every page depends on them.
 - ✅ **Safe post-login redirect.** Keep `?redirect=` in `sessionStorage` so
   it survives the 2FA detour. Accept only same-origin paths: must start with
   `/` and must not start with `//` or `/\`. Anything else falls back to the
-  default (`/dashboard`, a placeholder page until Milestone 2).
+  default (`/dashboard`).
 - ✅ **Route guards.** Signed-in users who open an `/auth/*` page go to the
   redirect target. Signed-out users who open an app page go to
   `/auth/login?redirect=…`. Avoid a flash of the wrong UI while `GET
@@ -302,19 +302,19 @@ on the next sign-in; and turning off the last method removes the prompt.
 
 **Goal:** a signed-in home that later features plug into.
 
-- ⬜ App layout for signed-in pages: sidebar (Dashboard, Challenges, Arenas,
+- ✅ App layout for signed-in pages: sidebar (Dashboard, Challenges, Arenas,
   Coding board, Leaderboard, Store), top bar with search, notifications and a
   user menu, and a mobile drawer.
-- ⬜ Dashboard: welcome state, stats placeholders, recent activity. Use empty
+- ✅ Dashboard: welcome state, stats placeholders, recent activity. Use empty
   states (`libs/ui` `EmptyState`) for features that aren't built yet.
-- ⬜ Profile and account settings: name and avatar (`PATCH /users`,
+- ✅ Profile and account settings: name and avatar (`PATCH /users`,
   `PATCH /users/me/avatar`), change password (`POST /users/reset-password`),
   change email (the `auth/email-change/*` flow), active devices
   (`GET /auth/user-devices`, `POST /auth/revoke-device`), and sign out
   everywhere (`POST /auth/logout-all`).
-- ⬜ Public profile page (`/u/<username>`). The username field doesn't exist
-  yet _(new)_.
-- ⬜ Notifications bell using the existing notifications module and Socket.IO
+- ✅ Public profile page (`/u/<username>`), with a new optional, unique
+  `username` on the account.
+- ✅ Notifications bell using the existing notifications module and Socket.IO
   gateway.
 
 ---

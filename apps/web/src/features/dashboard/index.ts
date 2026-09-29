@@ -1,1 +1,1 @@
-export { default as DashboardPlaceholder } from './components/DashboardPlaceholder';
+export { default as DashboardHome } from './components/DashboardHome';
