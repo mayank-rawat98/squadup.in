@@ -20,6 +20,8 @@ export type { InputProps } from './Input';
 export { inputVariants } from './input.variants';
 export { default as Label } from './Label';
 export type { LabelProps } from './Label';
+export { default as LogoMark } from './LogoMark';
+export type { LogoMarkProps } from './LogoMark';
 export { default as MotionWrapper } from './MotionWrapper';
 export type { MotionWrapperProps } from './MotionWrapper';
 export { default as OtpInput } from './OtpInput';
