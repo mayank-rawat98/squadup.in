@@ -1,5 +1,6 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
+import { BRAND_COLORS, SITE } from '@/config/site';
 import './global.css';
 
 /*
@@ -14,12 +15,34 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE.url),
   title: {
-    default: 'SquadUp — Compete. Collaborate. Win together.',
-    template: '%s · SquadUp',
+    default: `${SITE.name}: ${SITE.tagline}`,
+    template: `%s · ${SITE.name}`,
   },
-  description:
-    'SquadUp is a collaborative developer arena where squads build real software through project-based competitions.',
+  description: SITE.description,
+  applicationName: SITE.name,
+  keywords: [...SITE.keywords],
+  openGraph: {
+    type: 'website',
+    siteName: SITE.name,
+    locale: SITE.locale,
+    title: `${SITE.name}: ${SITE.tagline}`,
+    description: SITE.description,
+  },
+  twitter: {
+    card: 'summary_large_image',
+    site: SITE.twitterHandle,
+    creator: SITE.twitterHandle,
+    title: `${SITE.name}: ${SITE.tagline}`,
+    description: SITE.description,
+  },
+  robots: { index: true, follow: true },
+  formatDetection: { telephone: false },
+};
+
+export const viewport: Viewport = {
+  themeColor: BRAND_COLORS.primary,
 };
 
 export default function RootLayout({

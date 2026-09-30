@@ -28,6 +28,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       ? `${profile.fullName} (@${profile.username})`
       : name,
     description: `${name} on SquadUp.`,
+    alternates: { canonical: `/u/${profile.username}` },
   };
 }
 

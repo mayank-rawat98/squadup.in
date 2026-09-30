@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   title: 'Open source',
   description:
     'SquadUp is open source under the MIT licence. Read the code on GitHub, report bugs, suggest features and contribute.',
+  alternates: { canonical: '/open-source' },
 };
 
 export default function OpenSourceRoute() {

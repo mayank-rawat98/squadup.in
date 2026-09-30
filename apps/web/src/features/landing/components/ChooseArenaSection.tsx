@@ -11,12 +11,8 @@ import ArenaCard from './ArenaCard';
  * The first question a visitor asks is "what can I compete in?", so this
  * section answers it with the arenas themselves rather than with feature copy.
  *
- * Same rail-to-grid pattern as the live strip: a snapping swipe carousel below
- * xl, five columns above it. Scroll snap rather than a carousel library —
+ * A snapping swipe carousel below xl, five columns above it. Scroll snap rather than a carousel library —
  * it needs no JavaScript, so the section stays a server component.
- *
- * These cards are full rather than compact, so they also carry difficulty and
- * prize, which is what separates this section from the strip under the hero.
  */
 
 function ChooseArenaSection() {
