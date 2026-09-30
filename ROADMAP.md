@@ -351,6 +351,33 @@ Tasks:
   problems weighted by difficulty. Cache rankings in Redis sorted sets.
 - ⬜ Ops: create and edit problems and test cases.
 
+### Project challenges: frontend and SQL
+
+Beyond algorithm problems, students build a UI or write SQL on the platform,
+see it run live in the browser, and are graded by hidden tests on a separate
+grader. The design is in [docs/project-challenges.md](docs/project-challenges.md)
+and the decision in [ADR-0006](docs/adr/0006-project-challenges-grade-snapshots.md)
+(proposed). Confirm its open decisions before starting.
+
+- ⬜ Workspace shell: Monaco with a file tree and tabs, IndexedDB autosave,
+  and paste blocking across the whole project.
+- ⬜ Frontend preview: esbuild-wasm in a Web Worker, a sandboxed iframe with
+  an opaque origin and no network, a console panel and an error overlay.
+- ⬜ SQL playground: PGlite in a Web Worker, a results grid, reset, a
+  statement timeout and an `EXPLAIN` view.
+- ⬜ Challenge pack format _(new)_: schema, validator and zip parser.
+- ⬜ Grader _(new)_: `apps/grader` worker on a separate grader host,
+  `grader-frontend` (Playwright) and `grader-sql` (PGlite) images, jobs over
+  RabbitMQ, gVisor containers with no network.
+- ⬜ API _(new)_: `frontend` and `sql` challenge kinds, submissions with Run
+  (sample tests) and Submit (all tests), results pushed over Socket.IO.
+- ⬜ Challenge page for both kinds, with per-test results.
+- ⬜ Ops: upload a pack, see its self-test result, publish a version.
+- ⬜ First content: 5 frontend and 5 SQL challenges.
+
+Backend and DevOps tracks need a server-side workspace per student and come
+later, under their own ADR (see §7 of the design doc).
+
 ---
 
 ## Milestone 4: Arenas and proctoring
