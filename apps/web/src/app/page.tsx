@@ -10,7 +10,6 @@ import {
   FinalCtaSection,
   HeroSection,
   JourneySection,
-  LiveArenasSection,
   ManifestoSection,
   RewardsSection,
 } from '@/features/landing';
@@ -28,7 +27,6 @@ export default function LandingPage() {
       <SiteHeader />
       <main>
         <HeroSection />
-        <LiveArenasSection />
         <ChooseArenaSection />
         <BuildSquadSection />
         <BuildInsideSection />

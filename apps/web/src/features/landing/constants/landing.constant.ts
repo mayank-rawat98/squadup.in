@@ -63,8 +63,7 @@ export const ARENAS: Arena[] = [
     teamSize: 'Solo',
     duration: '60 Minutes',
     difficulty: 'beginner',
-    prize: '₹5,000',
-    status: 'live',
+    status: 'coming-soon',
   },
   {
     id: 'backend-battle',
@@ -76,8 +75,7 @@ export const ARENAS: Arena[] = [
     teamSize: 'Duo',
     duration: '3 Hours',
     difficulty: 'intermediate',
-    prize: '₹10,000',
-    status: 'live',
+    status: 'coming-soon',
   },
   {
     id: 'devops-deployment',
@@ -89,8 +87,7 @@ export const ARENAS: Arena[] = [
     teamSize: 'Team of 4',
     duration: '24 Hours',
     difficulty: 'advanced',
-    prize: '₹10,000',
-    status: 'live',
+    status: 'coming-soon',
   },
   {
     id: 'react-speed-build',
@@ -102,8 +99,7 @@ export const ARENAS: Arena[] = [
     teamSize: 'Solo',
     duration: '60 Minutes',
     difficulty: 'intermediate',
-    prize: '3D-Printed Trophy',
-    status: 'registration-open',
+    status: 'coming-soon',
   },
   {
     id: 'ai-hack-sprint',
@@ -115,8 +111,7 @@ export const ARENAS: Arena[] = [
     teamSize: 'Team of 4',
     duration: 'Weekend Challenge',
     difficulty: 'advanced',
-    prize: '₹25,000',
-    status: 'starts-soon',
+    status: 'coming-soon',
   },
 ];
 
@@ -177,12 +172,12 @@ export const ARENA_ACCENT_CLASS: Record<
 
 /** The hero's three-line promise, kept out of the component for reuse. */
 export const HERO_COPY = {
-  eyebrow: 'The developer arena is live',
+  eyebrow: 'Arenas are coming soon',
   titleLeading: 'Compete. Collaborate.',
   titleAccent: 'Win together.',
   subtitle:
     'Join developer competitions, build with your squad, climb the leaderboard and earn real recognition.',
-  primaryCta: { label: 'Join a Live Arena', href: '/arenas' },
+  primaryCta: { label: 'Explore Arenas', href: '/arenas' },
   secondaryCta: { label: 'Explore Contests', href: '/contests' },
 } as const;
 

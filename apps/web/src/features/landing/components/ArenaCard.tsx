@@ -9,7 +9,7 @@ import {
 import type { Arena } from '../types/landing.types';
 
 /*
- * Shared by the live strip under the hero and by Choose Your Arena.
+ * Used by Choose Your Arena.
  *
  * Hover follows the brief exactly and nothing more: the card lifts, the shadow
  * softens, the border picks up the arena's accent, the icon scales a little
@@ -24,7 +24,7 @@ import type { Arena } from '../types/landing.types';
 
 export interface ArenaCardProps {
   arena: Arena;
-  /** Compact omits the difficulty and prize row. Used in the live strip. */
+  /** Compact omits the difficulty row. */
   compact?: boolean;
   className?: string;
 }
@@ -74,10 +74,6 @@ function ArenaCard({ arena, compact = false, className }: ArenaCardProps) {
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant={arena.difficulty} pill={false}>
             {ARENA_DIFFICULTY_LABEL[arena.difficulty]}
-          </Badge>
-          {/* Prizes range from "₹5,000" to "SquadUp Merchandise". */}
-          <Badge variant="outline" pill={false} className="max-w-full truncate">
-            {arena.prize}
           </Badge>
         </div>
       )}

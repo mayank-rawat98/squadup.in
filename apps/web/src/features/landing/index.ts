@@ -9,7 +9,6 @@ export { default as FaqSection } from './components/FaqSection';
 export { default as FinalCtaSection } from './components/FinalCtaSection';
 export { default as HeroSection } from './components/HeroSection';
 export { default as JourneySection } from './components/JourneySection';
-export { default as LiveArenasSection } from './components/LiveArenasSection';
 export { default as ManifestoSection } from './components/ManifestoSection';
 export { default as RewardsSection } from './components/RewardsSection';
 export * from './constants/landing.constant';

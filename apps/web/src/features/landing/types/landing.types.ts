@@ -31,8 +31,6 @@ export interface Arena {
   /** "60 Minutes", "3 Hours", "Weekend Challenge". */
   duration: string;
   difficulty: ArenaDifficulty;
-  /** "₹10,000", "SquadUp Merchandise", "XP Rewards". */
-  prize: string;
   status: ArenaStatus;
   /*
    * Populated by the API, absent until then. The landing page renders the
