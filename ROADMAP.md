@@ -42,7 +42,7 @@ Status legend: ✅ Done · 🚧 In progress · ⬜ Not started
 | 2   | [App shell, dashboard and profile](#milestone-2-app-shell-dashboard-and-profile)  | ✅     |
 | 3   | [Solo challenges and leaderboards](#milestone-3-solo-challenges-and-leaderboards) | ⬜     |
 | 4   | [Arenas and proctoring](#milestone-4-arenas-and-proctoring)                       | ⬜     |
-| 5   | [Coding board](#milestone-5-coding-board)                                         | ⬜     |
+| 5   | [Coding board](#milestone-5-coding-board)                                         | 🚧     |
 | 6   | [Rewards store](#milestone-6-rewards-store)                                       | ⬜     |
 | 7   | [Operations console](#milestone-7-operations-console)                             | 🚧     |
 
@@ -416,17 +416,22 @@ squads against other squads, and winners earn rewards.
 
 **Goal:** a shared room where friends code, talk and sketch together.
 
-**Decide before building:** the CRDT library (Yjs is the default choice,
-with `y-monaco` or `y-codemirror`), voice transport (WebRTC mesh for small
-rooms, or an SFU such as LiveKit), and the whiteboard engine (tldraw or
-Excalidraw).
+**Decided** ([ADR-0007](docs/adr/0007-coding-board-yjs-rooms.md)): one Yjs
+document per room, synced through the API's `/boards` socket; CodeMirror 6
+with `y-codemirror.next`; our own canvas for the whiteboard. Still open: the
+voice transport (WebRTC mesh for small rooms, or an SFU such as LiveKit).
 
-- ⬜ Boards _(new)_: create, invite, permissions, file tree.
-- ⬜ Real-time editor: shared documents, live cursors with names and colours,
-  presence (who is online and which file they're in).
-- ⬜ Chat per board, backed by Socket.IO and stored in the database.
+- 🚧 Boards _(new)_: create a room with a five-character room ID, join by
+  that ID with a seat limit, list your rooms, and membership as the access
+  rule (all ✅). Still to come: invite links, host permissions (remove
+  someone, close the room) and a file tree beyond one file per language.
+- ✅ Real-time editor: one shared file per language, live cursors with names
+  and colours, presence (who is online, which line they're on, whether
+  they're on the whiteboard), and Follow.
+- ✅ Chat per board, backed by Socket.IO and stored in the database.
 - ⬜ Voice channels: join and leave, mute, active-speaker indicator.
-- ⬜ Whiteboard: shared canvas with shapes, freehand drawing and text.
+- 🚧 Whiteboard: shared canvas with freehand drawing, highlighter,
+  rectangles, arrows and an eraser (✅). Text on the board is still to come.
 - ⬜ React + TypeScript playground with a live preview in a sandboxed iframe.
 - ⬜ Code execution by reusing the Milestone 3 runner.
 
