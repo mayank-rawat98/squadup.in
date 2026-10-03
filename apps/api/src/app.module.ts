@@ -46,6 +46,8 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { RateLimiterModule } from './rate-limiter/rate-limiter.module';
 import { RedisModule } from './redis/redis.module';
 import { ReferenceDataModule } from './reference-data/reference-data.module';
+import { SandboxesController } from './sandboxes/sandboxes.controller';
+import { SandboxesModule } from './sandboxes/sandboxes.module';
 import { SearchController } from './search/search.controller';
 import { SearchModule } from './search/search.module';
 import { GeneralSettingsController } from './settings/general-settings.controller';
@@ -120,6 +122,7 @@ import { UsersModule } from './users/users.module';
     SearchModule,
     BlogsModule,
     BoardsModule,
+    SandboxesModule,
   ],
   controllers: [],
   providers: [],
@@ -176,6 +179,7 @@ export class AppModule implements NestModule {
         TourController,
         SearchController,
         BoardsController,
+        SandboxesController,
       );
 
     // Staff realm — the ops dashboard authenticates with a staff token; there is
