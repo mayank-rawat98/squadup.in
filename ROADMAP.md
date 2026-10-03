@@ -423,7 +423,9 @@ voice transport (WebRTC mesh for small rooms, or an SFU such as LiveKit).
 
 - 🚧 Boards _(new)_: create a room with a five-character room ID, join by
   that ID with a seat limit, list your rooms, and membership as the access
-  rule (all ✅). Still to come: invite links, host permissions (remove
+  rule, your recent rooms on the dashboard, and rooms deleted with
+  everything in them 7 days after they're made (all ✅). Still to come:
+  invite links, host permissions (remove
   someone, close the room) and a file tree beyond one file per language.
 - ✅ Real-time editor: one shared file per language, live cursors with names
   and colours, presence (who is online, which line they're on, whether
@@ -431,7 +433,9 @@ voice transport (WebRTC mesh for small rooms, or an SFU such as LiveKit).
 - ✅ Chat per board, backed by Socket.IO and stored in the database.
 - ⬜ Voice channels: join and leave, mute, active-speaker indicator.
 - 🚧 Whiteboard: shared canvas with freehand drawing, highlighter,
-  rectangles, arrows and an eraser (✅). Text on the board is still to come.
+  rectangles, arrows and an eraser, pages (each person picks the page they
+  look at), and saving a page as a PNG (✅). Text on the board is still to
+  come.
 - ⬜ React + TypeScript playground with a live preview in a sandboxed iframe.
 - ⬜ Code execution by reusing the Milestone 3 runner.
 

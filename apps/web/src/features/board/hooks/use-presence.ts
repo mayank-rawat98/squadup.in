@@ -16,6 +16,8 @@ export interface PresenceState {
     colorLight: string;
   };
   view: BoardView;
+  /** The whiteboard page open, by id. */
+  page?: string;
   /** 1-based line of the caret in the open file, when known. */
   line?: number;
   /** True while drawing on the whiteboard. */

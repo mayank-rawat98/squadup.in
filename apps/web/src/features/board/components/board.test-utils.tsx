@@ -11,6 +11,7 @@ export const BOARD: BoardDetail = {
   role: 'member',
   joinedAt: '2026-10-04T10:00:00.000Z',
   createdAt: '2026-10-04T09:00:00.000Z',
+  expiresAt: '2026-10-11T09:00:00.000Z',
   closedAt: null,
   members: [
     {

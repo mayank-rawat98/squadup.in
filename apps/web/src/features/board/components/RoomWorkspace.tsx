@@ -17,6 +17,7 @@ import {
   inputVariants,
 } from '@squadup.in/ui';
 import {
+  BOARD_DOC,
   BOARD_LANGUAGES,
   BOARD_PATH,
   BOARD_QUERY_KEYS,
@@ -34,6 +35,7 @@ import { useSharedLanguage } from '../hooks/use-shared-language';
 import type { BoardDetail, BoardLanguageId } from '../types/board.types';
 import { boardLanguage } from '../utils/board-language';
 import { type RoomMember, roomMembers } from '../utils/room-members';
+import { countOthersOnPages } from '../utils/whiteboard-pages';
 import ChatPanel from './ChatPanel';
 import ConsolePanel from './ConsolePanel';
 import MembersList from './MembersList';
@@ -79,6 +81,7 @@ export default function RoomWorkspace({ board, you }: RoomWorkspaceProps) {
   const lang = boardLanguage(language);
   const [view, setView] = useState<BoardView>('code');
   const [drawing, setDrawing] = useState(false);
+  const [pageId, setPageId] = useState<string>(BOARD_DOC.firstPageId);
   const [caretLine, setCaretLine] = useState<number>();
   const [following, setFollowing] = useState<string | null>(null);
   const [membersOpen, setMembersOpen] = useState(true);
@@ -134,6 +137,7 @@ export default function RoomWorkspace({ board, you }: RoomWorkspaceProps) {
             colorLight: me.colour.cssFaded,
           },
           view,
+          page: pageId,
           line: caretLine,
           drawing,
           typing,
@@ -160,17 +164,29 @@ export default function RoomWorkspace({ board, you }: RoomWorkspaceProps) {
   const followedMember = members.find((m) => m.id === following);
   // Following stops by itself when the person leaves, and switches tab with them.
   const followedView = followed?.view;
+  const followedPage = followed?.page;
   useEffect(() => {
     if (following && !followedView) setFollowing(null);
     if (followedView) setView(followedView);
   }, [following, followedView]);
+  useEffect(() => {
+    if (followedPage) setPageId(followedPage);
+  }, [followedPage]);
 
   const typingNames = [
     ...new Set(peers.filter((p) => p.typing).map((p) => p.user.name)),
   ];
+  // Drawing on another page doesn't change what you see, so it isn't news here.
   const drawingNames = [
-    ...new Set(peers.filter((p) => p.drawing).map((p) => p.user.name)),
+    ...new Set(
+      peers
+        .filter(
+          (p) => p.drawing && (p.page ?? BOARD_DOC.firstPageId) === pageId,
+        )
+        .map((p) => p.user.name),
+    ),
   ];
+  const othersOnPage = countOthersOnPages(peers, you.id);
   const colourOf = (userId: string) =>
     members.find((m) => m.id === userId)?.colour;
 
@@ -412,6 +428,10 @@ export default function RoomWorkspace({ board, you }: RoomWorkspaceProps) {
             <Whiteboard
               doc={connection.doc}
               youId={you.id}
+              roomName={board.name}
+              pageId={pageId}
+              onPageChange={setPageId}
+              othersOnPage={othersOnPage}
               drawing={drawingNames}
               onDrawingChange={setDrawing}
             />
