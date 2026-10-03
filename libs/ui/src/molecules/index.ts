@@ -12,3 +12,5 @@ export { default as Drawer } from './Drawer';
 export type { DrawerProps } from './Drawer';
 export { default as Popover } from './Popover';
 export type { PopoverProps, PopoverTriggerProps } from './Popover';
+export { default as CopyButton } from './CopyButton';
+export type { CopyButtonProps } from './CopyButton';
