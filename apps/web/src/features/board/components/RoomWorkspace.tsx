@@ -13,6 +13,7 @@ import {
   LogoMark,
   Spinner,
   buttonVariants,
+  cn,
   inputVariants,
 } from '@squadup.in/ui';
 import {
@@ -20,6 +21,7 @@ import {
   BOARD_PATH,
   BOARD_QUERY_KEYS,
 } from '../constants/board.constant';
+import { useBoardChat } from '../hooks/use-board-chat';
 import { useBoardConnection } from '../hooks/use-board-connection';
 import { usePanelSize } from '../hooks/use-panel-size';
 import {
@@ -32,6 +34,7 @@ import { useSharedLanguage } from '../hooks/use-shared-language';
 import type { BoardDetail, BoardLanguageId } from '../types/board.types';
 import { boardLanguage } from '../utils/board-language';
 import { type RoomMember, roomMembers } from '../utils/room-members';
+import ChatPanel from './ChatPanel';
 import ConsolePanel from './ConsolePanel';
 import MembersList from './MembersList';
 import PanelToggle from './PanelToggle';
@@ -62,8 +65,8 @@ const STATUS_BADGE = {
 /*
  * The room, laid out as the "squad bench": room, people and chat on the
  * left; the shared editor and console on the right. Each panel edge can be
- * dragged or moved with the arrow keys, and the people list and console can
- * be collapsed. Below `lg` the panels stack and the page scrolls.
+ * dragged or moved with the arrow keys, and the people list, chat and
+ * console can each be collapsed; whatever stays open takes the space. Below `lg` the panels stack and the page scrolls.
  */
 export default function RoomWorkspace({ board, you }: RoomWorkspaceProps) {
   const connection = useBoardConnection(board.code);
@@ -77,17 +80,29 @@ export default function RoomWorkspace({ board, you }: RoomWorkspaceProps) {
   const [caretLine, setCaretLine] = useState<number>();
   const [following, setFollowing] = useState<string | null>(null);
   const [membersOpen, setMembersOpen] = useState(true);
+  const [chatOpen, setChatOpen] = useState(true);
+  const [typing, setTyping] = useState(false);
   const [consoleOpen, setConsoleOpen] = useState(true);
   const [stdin, setStdin] = useState('');
   const roomConsole = useRoomConsole();
   const queryClient = useQueryClient();
   const membersId = useId();
+  const chatId = useId();
+  const live = connection?.status === 'live';
+  const chat = useBoardChat(board.code, connection?.socket, live);
 
   const side = usePanelSize({
     initial: 320,
     min: 240,
     max: 440,
     axis: 'x',
+    direction: 1,
+  });
+  const membersSize = usePanelSize({
+    initial: 230,
+    min: 72,
+    max: 480,
+    axis: 'y',
     direction: 1,
   });
   const consoleSize = usePanelSize({
@@ -116,6 +131,7 @@ export default function RoomWorkspace({ board, you }: RoomWorkspaceProps) {
           },
           view,
           line: caretLine,
+          typing,
         }
       : null,
   );
@@ -142,15 +158,26 @@ export default function RoomWorkspace({ board, you }: RoomWorkspaceProps) {
     if (following && !followed) setFollowing(null);
   }, [following, followed]);
 
+  const typingNames = [
+    ...new Set(peers.filter((p) => p.typing).map((p) => p.user.name)),
+  ];
+  const colourOf = (userId: string) =>
+    members.find((m) => m.id === userId)?.colour;
+
   const host = board.members.find((m) => m.role === 'host');
   const status = STATUS_BADGE[connection?.status ?? 'connecting'];
 
   return (
     <div className="bg-background text-foreground flex min-h-dvh flex-col lg:h-dvh lg:flex-row lg:overflow-hidden">
       <aside
-        aria-label="Room and people"
+        aria-label="Room, people and chat"
         className="bg-muted/40 border-border flex w-full shrink-0 flex-col border-b lg:w-(--side-w) lg:border-r lg:border-b-0"
-        style={{ '--side-w': `${side.size}px` } as React.CSSProperties}
+        style={
+          {
+            '--side-w': `${side.size}px`,
+            '--members-h': `${membersSize.size}px`,
+          } as React.CSSProperties
+        }
       >
         <div className="flex items-center gap-2.5 px-4 pt-3.5 pb-2.5">
           <LogoMark className="h-7 w-7 shrink-0" />
@@ -195,9 +222,49 @@ export default function RoomWorkspace({ board, you }: RoomWorkspaceProps) {
             onFollow={(member: RoomMember | null) =>
               setFollowing(member?.id ?? null)
             }
-            className="flex-1"
+            className={chatOpen ? 'lg:h-(--members-h)' : 'flex-1'}
           />
         ) : null}
+        {membersOpen && chatOpen ? (
+          <ResizeHandle
+            {...membersSize.separator}
+            aria-label="Resize the people list and chat"
+            className="hidden lg:block"
+          />
+        ) : null}
+
+        <section
+          aria-label="Chat"
+          className={cn(
+            'border-border bg-card flex flex-col border-t',
+            chatOpen ? 'min-h-88 flex-1 lg:min-h-0' : 'mt-auto',
+          )}
+        >
+          <div className="flex h-11 shrink-0 items-center px-2">
+            <PanelToggle
+              expanded={chatOpen}
+              onToggle={() => setChatOpen((open) => !open)}
+              controls={chatId}
+            >
+              Chat
+            </PanelToggle>
+          </div>
+          {chatOpen ? (
+            <ChatPanel
+              id={chatId}
+              messages={chat.messages}
+              isPending={chat.isPending}
+              error={chat.error}
+              onRetry={chat.retry}
+              onSend={chat.send}
+              live={live}
+              colourOf={colourOf}
+              typing={typingNames}
+              onTypingChange={setTyping}
+              className="border-border flex-1 border-t"
+            />
+          ) : null}
+        </section>
       </aside>
 
       <ResizeHandle

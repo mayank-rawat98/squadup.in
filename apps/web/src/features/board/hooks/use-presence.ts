@@ -20,6 +20,8 @@ export interface PresenceState {
   line?: number;
   /** True while drawing on the whiteboard. */
   drawing?: boolean;
+  /** True while writing a chat message. */
+  typing?: boolean;
 }
 
 export interface Peer extends PresenceState {
