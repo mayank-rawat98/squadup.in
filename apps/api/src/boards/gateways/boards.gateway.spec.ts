@@ -29,7 +29,12 @@ describe('BoardsGateway', () => {
   let redis: { isDeviceBlacklisted: jest.Mock };
   let boards: { requireMember: jest.Mock };
   let chat: { post: jest.Mock };
-  let rooms: { join: jest.Mock; leave: jest.Mock; applyUpdate: jest.Mock };
+  let rooms: {
+    join: jest.Mock;
+    leave: jest.Mock;
+    applyUpdate: jest.Mock;
+    setBroadcast: jest.Mock;
+  };
   let gateway: BoardsGateway;
 
   beforeEach(() => {
@@ -55,6 +60,7 @@ describe('BoardsGateway', () => {
       }),
       leave: jest.fn(),
       applyUpdate: jest.fn(),
+      setBroadcast: jest.fn(),
     };
     gateway = new BoardsGateway(
       jwt as unknown as JwtAppService,
@@ -67,30 +73,49 @@ describe('BoardsGateway', () => {
 
   const connected = async () => {
     const client = socket();
-    await gateway.handleConnection(client as never);
+    await gateway.authenticate(client as never);
     return client;
   };
 
-  describe('handleConnection', () => {
-    it('drops a socket without a token', async () => {
-      const client = socket(null);
-      await gateway.handleConnection(client as never);
-      expect(client.disconnect).toHaveBeenCalled();
+  describe('authenticate', () => {
+    it('refuses a socket without a token', async () => {
+      await expect(
+        gateway.authenticate(socket(null) as never),
+      ).rejects.toThrow();
     });
 
-    it('drops a socket whose token does not verify', async () => {
+    it('refuses a socket whose token does not verify', async () => {
       jwt.verifyAccessToken.mockRejectedValue(new Error('jwt expired'));
-      const client = socket();
-      await gateway.handleConnection(client as never);
-      expect(client.disconnect).toHaveBeenCalled();
+      await expect(gateway.authenticate(socket() as never)).rejects.toThrow();
     });
 
-    it('drops a device that has been signed out', async () => {
+    it('refuses a device that has been signed out', async () => {
       redis.isDeviceBlacklisted.mockResolvedValue(true);
-      const client = socket();
-      await gateway.handleConnection(client as never);
+      await expect(gateway.authenticate(socket() as never)).rejects.toThrow();
       expect(redis.isDeviceBlacklisted).toHaveBeenCalledWith('d1');
-      expect(client.disconnect).toHaveBeenCalled();
+    });
+
+    it('runs as middleware, so no message arrives before the user is known', async () => {
+      const use = jest.fn();
+      gateway.afterInit({ use, to: jest.fn() } as never);
+      const middleware = use.mock.calls[0][0];
+
+      const accepted = socket();
+      await new Promise<void>((resolve) =>
+        middleware(accepted, (error?: Error) => {
+          expect(error).toBeUndefined();
+          resolve();
+        }),
+      );
+      expect(accepted.data).toMatchObject({ userId: 'u1' });
+
+      jwt.verifyAccessToken.mockRejectedValue(new Error('jwt expired'));
+      await new Promise<void>((resolve) =>
+        middleware(socket(), (error?: Error) => {
+          expect(error?.message).toBe('Sign in again to open this room.');
+          resolve();
+        }),
+      );
     });
   });
 

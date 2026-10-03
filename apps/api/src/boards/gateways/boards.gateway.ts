@@ -2,7 +2,6 @@ import { HttpException, Logger } from '@nestjs/common';
 import {
   ConnectedSocket,
   MessageBody,
-  OnGatewayConnection,
   OnGatewayDisconnect,
   OnGatewayInit,
   SubscribeMessage,
@@ -55,9 +54,7 @@ const FALLBACK_ERROR = 'Something went wrong. Please try again.';
   cors: { origin: allowedOrigins, credentials: true },
   transports: ['websocket', 'polling'],
 })
-export class BoardsGateway
-  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
-{
+export class BoardsGateway implements OnGatewayInit, OnGatewayDisconnect {
   private readonly logger = new Logger(BoardsGateway.name);
 
   constructor(
@@ -69,6 +66,19 @@ export class BoardsGateway
   ) {}
 
   afterInit(server: Namespace): void {
+    // Authenticate in middleware, before the connection is accepted: a client
+    // sends board:open as soon as it connects, so checking later in
+    // handleConnection would race its first message. A refused socket gets
+    // connect_error with the reason.
+    server.use((socket, next) => {
+      this.authenticate(socket as BoardSocket).then(
+        () => next(),
+        (error: unknown) => {
+          this.logger.warn(`Board socket rejected: ${errorText(error)}`);
+          next(new Error('Sign in again to open this room.'));
+        },
+      );
+    });
     this.rooms.setBroadcast((boardId, event, payload, exceptSocketId) => {
       const target = server.to(roomOf(boardId));
       (exceptSocketId ? target.except(exceptSocketId) : target).emit(
@@ -78,24 +88,18 @@ export class BoardsGateway
     });
   }
 
-  async handleConnection(client: BoardSocket): Promise<void> {
-    try {
-      const token: unknown = client.handshake.auth?.token;
-      if (typeof token !== 'string' || !token) {
-        client.disconnect();
-        return;
-      }
-      const claims = await this.jwt.verifyAccessToken(token);
-      // A device signed out elsewhere must not keep a live board open.
-      if (!claims.sub || (await this.redis.isDeviceBlacklisted(claims.did))) {
-        client.disconnect();
-        return;
-      }
-      client.data = { userId: claims.sub, boards: new Map(), chatSentAt: [] };
-    } catch (error: unknown) {
-      this.logger.warn(`Board socket rejected: ${(error as Error).message}`);
-      client.disconnect();
+  /** Throws unless the handshake carries a live access token for a device still signed in. */
+  async authenticate(client: BoardSocket): Promise<void> {
+    const token: unknown = client.handshake.auth?.token;
+    if (typeof token !== 'string' || !token) {
+      throw new Error('no token');
     }
+    const claims = await this.jwt.verifyAccessToken(token);
+    // A device signed out elsewhere must not keep a live board open.
+    if (!claims.sub || (await this.redis.isDeviceBlacklisted(claims.did))) {
+      throw new Error('signed out');
+    }
+    client.data = { userId: claims.sub, boards: new Map(), chatSentAt: [] };
   }
 
   async handleDisconnect(client: BoardSocket): Promise<void> {
@@ -214,7 +218,10 @@ export class BoardsGateway
       return { ok: true, ...(await run()) };
     } catch (error: unknown) {
       if (!(error instanceof HttpException)) {
-        this.logger.error(`Board socket handler failed: ${messageOf(error)}`);
+        this.logger.error(
+          `Board socket handler failed: ${errorText(error)}`,
+          error instanceof Error ? error.stack : undefined,
+        );
       }
       return { ok: false, message: messageOf(error) };
     }
@@ -237,6 +244,10 @@ function toBytes(value: unknown): Uint8Array | null {
   if (value instanceof Uint8Array) return new Uint8Array(value);
   if (value instanceof ArrayBuffer) return new Uint8Array(value);
   return null;
+}
+
+function errorText(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }
 
 function messageOf(error: unknown): string {
