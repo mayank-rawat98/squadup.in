@@ -1,5 +1,6 @@
 import type { LucideIcon } from 'lucide-react';
 import {
+  Atom,
   Code2,
   LayoutDashboard,
   ShoppingBag,
@@ -31,6 +32,7 @@ export const APP_NAV: readonly AppNavItem[] = [
   },
   { label: 'Arenas', href: '/arenas', icon: Swords, comingSoon: true },
   { label: 'Coding board', href: '/board', icon: Users },
+  { label: 'React sandbox', href: '/sandbox', icon: Atom },
   {
     label: 'Leaderboard',
     href: '/leaderboard',
