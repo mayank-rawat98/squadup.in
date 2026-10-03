@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, LessThanOrEqual, Repository } from 'typeorm';
 import { BoardRole } from '../constants/board.constants';
 import { Board, BoardMember } from '../entities';
 
@@ -96,16 +96,34 @@ export class BoardsRepository {
       .getMany();
   }
 
-  /** The boards a user has joined, most recently joined first. */
-  async listForUser(userId: string, page: number, limit: number) {
+  /** The unexpired boards a user has joined, most recently joined first. */
+  async listForUser(userId: string, page: number, limit: number, now: Date) {
     const [items, total] = await this.members
       .createQueryBuilder('member')
       .innerJoinAndSelect('member.board', 'board')
       .where('member.userId = :userId', { userId })
+      .andWhere('board.expiresAt > :now', { now })
       .orderBy('member.joinedAt', 'DESC')
       .skip((page - 1) * limit)
       .take(limit)
       .getManyAndCount();
     return { items, total };
+  }
+
+  /** Ids of boards whose time is up, oldest first. */
+  async findExpiredIds(now: Date, limit: number): Promise<string[]> {
+    const rows = await this.boards.find({
+      select: { id: true },
+      where: { expiresAt: LessThanOrEqual(now) },
+      order: { expiresAt: 'ASC' },
+      take: limit,
+    });
+    return rows.map((row) => row.id);
+  }
+
+  /** Deletes boards; their document, members and messages cascade with them. */
+  async deleteByIds(ids: readonly string[]): Promise<void> {
+    if (ids.length === 0) return;
+    await this.boards.delete({ id: In([...ids]) });
   }
 }

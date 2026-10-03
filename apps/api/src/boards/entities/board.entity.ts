@@ -12,6 +12,7 @@ import { User } from '../../users/entities/user.entity';
 import {
   BOARD_CODE_LENGTH,
   BOARD_DEFAULT_SEATS,
+  BOARD_RETENTION_DAYS,
   BoardLanguage,
 } from '../constants/board.constants';
 
@@ -54,6 +55,19 @@ export class Board {
   /** Set when the host closes the room; closed rooms are read-only history. */
   @Column({ type: 'timestamptz', nullable: true })
   closedAt!: Date | null;
+
+  /**
+   * When the room is deleted with everything in it. Set by the database on
+   * insert, so every writer (including an older release mid-deploy) gets it.
+   * Written the way Postgres reads the default back, so `migration:generate`
+   * doesn't see a change that isn't there.
+   */
+  @Index('IDX_BOARDS_EXPIRES')
+  @Column({
+    type: 'timestamptz',
+    default: () => `(now() + '${BOARD_RETENTION_DAYS} days')`,
+  })
+  expiresAt!: Date;
 
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt!: Date;

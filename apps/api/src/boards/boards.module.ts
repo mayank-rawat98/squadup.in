@@ -7,6 +7,7 @@ import { BoardDocumentsRepository } from './repositories/board-documents.reposit
 import { BoardMessagesRepository } from './repositories/board-messages.repository';
 import { BoardsRepository } from './repositories/boards.repository';
 import { BoardChatService } from './services/board-chat.service';
+import { BoardExpiryService } from './services/board-expiry.service';
 import { BoardRoomsService } from './services/board-rooms.service';
 import { BoardsService } from './services/boards.service';
 
@@ -19,6 +20,7 @@ import { BoardsService } from './services/boards.service';
   providers: [
     BoardsService,
     BoardChatService,
+    BoardExpiryService,
     BoardRoomsService,
     BoardsGateway,
     BoardsRepository,

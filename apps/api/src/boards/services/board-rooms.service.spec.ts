@@ -66,6 +66,44 @@ describe('BoardRoomsService', () => {
     expect(doc.getText('code:java').toString()).toBe(
       BOARD_STARTER_CODE[BoardLanguage.JAVA],
     );
+    expect(doc.getArray('pages').toArray()).toEqual([{ id: 'main' }]);
+  });
+
+  describe('evict', () => {
+    it('tells the room it expired and drops it without saving', async () => {
+      await service.join(board, 's1');
+      await jest.advanceTimersByTimeAsync(BOARD_SAVE_DEBOUNCE_MS);
+      documents.save.mockClear();
+      broadcast.mockClear();
+
+      await service.evict('b1');
+      await jest.advanceTimersByTimeAsync(BOARD_SAVE_MAX_WAIT_MS);
+
+      expect(broadcast).toHaveBeenCalledWith(
+        'b1',
+        BOARD_SOCKET_EVENTS.EXPIRED,
+        {
+          message:
+            "This room has expired. Rooms are deleted 7 days after they're made.",
+        },
+      );
+      expect(documents.save).not.toHaveBeenCalled();
+    });
+
+    it('loads the room from storage again if it is opened after eviction', async () => {
+      await service.join(board, 's1');
+      await service.evict('b1');
+
+      await service.join(board, 's2');
+
+      expect(documents.load).toHaveBeenCalledTimes(2);
+    });
+
+    it('does nothing for a room that is not open', async () => {
+      await service.evict('b1');
+
+      expect(broadcast).not.toHaveBeenCalled();
+    });
   });
 
   it('restores a stored room instead of seeding it', async () => {

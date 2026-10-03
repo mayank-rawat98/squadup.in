@@ -34,6 +34,7 @@ export function toBoardSummary(board: Board, membership: BoardMember) {
     role: membership.role,
     joinedAt: membership.joinedAt,
     createdAt: board.createdAt,
+    expiresAt: board.expiresAt,
     closedAt: board.closedAt,
   };
 }

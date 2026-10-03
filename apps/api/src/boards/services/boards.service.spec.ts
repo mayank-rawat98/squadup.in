@@ -1,6 +1,7 @@
 import {
   ConflictException,
   ForbiddenException,
+  GoneException,
   NotFoundException,
   ServiceUnavailableException,
 } from '@nestjs/common';
@@ -19,8 +20,12 @@ const board = (patch: Partial<Board> = {}): Board =>
     hostId: 'host',
     closedAt: null,
     createdAt: new Date('2026-10-01T10:00:00Z'),
+    expiresAt: new Date('2026-10-08T10:00:00Z'),
     ...patch,
   }) as Board;
+
+/** Every test runs at this instant, between the board's creation and expiry. */
+const NOW = new Date('2026-10-04T12:00:00Z');
 
 const membership = (patch: Partial<BoardMember> = {}): BoardMember =>
   ({
@@ -48,6 +53,7 @@ describe('BoardsService', () => {
   let service: BoardsService;
 
   beforeEach(() => {
+    jest.useFakeTimers({ now: NOW });
     repo = {
       findByCode: jest.fn().mockResolvedValue(board()),
       codeExists: jest.fn().mockResolvedValue(false),
@@ -58,6 +64,10 @@ describe('BoardsService', () => {
       listForUser: jest.fn().mockResolvedValue({ items: [], total: 0 }),
     };
     service = new BoardsService(repo as unknown as BoardsRepository);
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   describe('create', () => {
@@ -118,6 +128,13 @@ describe('BoardsService', () => {
       );
     });
 
+    it('returns 410 when the room has expired, without seating anyone', async () => {
+      repo.findByCode.mockResolvedValue(board({ expiresAt: NOW }));
+
+      await expect(service.join('u1', 'K7Q2M')).rejects.toThrow(GoneException);
+      expect(repo.addMember).not.toHaveBeenCalled();
+    });
+
     it('opens the room for someone who is already in it', async () => {
       repo.addMember.mockResolvedValue('already-member');
 
@@ -144,15 +161,41 @@ describe('BoardsService', () => {
         ForbiddenException,
       );
     });
+
+    it('returns 410 to a member once the room has expired', async () => {
+      repo.findByCode.mockResolvedValue(board({ expiresAt: NOW }));
+
+      await expect(service.requireMember('u1', 'K7Q2M')).rejects.toThrow(
+        GoneException,
+      );
+    });
+
+    it('lets a member in until the last millisecond before expiry', async () => {
+      const expiresAt = new Date(NOW.getTime() + 1);
+      repo.findByCode.mockResolvedValue(board({ expiresAt }));
+
+      const access = await service.requireMember('u1', 'K7Q2M');
+
+      expect(access.board.expiresAt).toBe(expiresAt);
+    });
+
+    it('still refuses a non-member of an expired room with 403', async () => {
+      repo.findByCode.mockResolvedValue(board({ expiresAt: NOW }));
+      repo.findMembership.mockResolvedValue(null);
+
+      await expect(service.requireMember('u2', 'K7Q2M')).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
   });
 
   describe('listForUser', () => {
-    it('defaults to the first page of 20', async () => {
+    it('defaults to the first page of 20 and leaves out rooms expired by now', async () => {
       repo.listForUser.mockResolvedValue({ items: [], total: 41 });
 
       const result = await service.listForUser('u1', {});
 
-      expect(repo.listForUser).toHaveBeenCalledWith('u1', 1, 20);
+      expect(repo.listForUser).toHaveBeenCalledWith('u1', 1, 20, NOW);
       expect(result).toMatchObject({ page: 1, limit: 20, totalPages: 3 });
     });
   });
