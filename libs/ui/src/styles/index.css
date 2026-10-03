@@ -102,6 +102,19 @@
   --color-arena-ai: hsl(var(--arena-ai));
   --color-arena-ai-soft: hsl(var(--arena-ai-soft));
 
+  /*
+   * Presence — one colour per collaborator on a shared surface (cursors,
+   * avatars, whiteboard ink). Kept apart from the arena accents so a person's
+   * colour never reads as a category. `-foreground` is the text on top.
+   */
+  --color-presence-1: hsl(var(--presence-1));
+  --color-presence-2: hsl(var(--presence-2));
+  --color-presence-3: hsl(var(--presence-3));
+  --color-presence-4: hsl(var(--presence-4));
+  --color-presence-5: hsl(var(--presence-5));
+  --color-presence-6: hsl(var(--presence-6));
+  --color-presence-foreground: hsl(var(--presence-foreground));
+
   /* Radius — lg is the base; xl and 2xl are the marketing card sizes. */
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -338,6 +351,15 @@
     --arena-ai: 330 81% 57%;
     --arena-ai-soft: 330 85% 96%;
 
+    /* Presence — dark enough for white text at 4.5:1. */
+    --presence-1: 330 75% 42%;
+    --presence-2: 142 70% 28%;
+    --presence-3: 217 85% 45%;
+    --presence-4: 25 90% 38%;
+    --presence-5: 186 80% 28%;
+    --presence-6: 45 90% 30%;
+    --presence-foreground: 0 0% 100%;
+
     --radius: 0.75rem;
 
     /*
@@ -480,6 +502,15 @@
     --arena-react-soft: 25 45% 18%;
     --arena-ai: 330 80% 68%;
     --arena-ai-soft: 330 40% 20%;
+
+    /* Presence — brightened, with dark text on top. */
+    --presence-1: 330 81% 70%;
+    --presence-2: 142 55% 55%;
+    --presence-3: 217 85% 68%;
+    --presence-4: 25 95% 62%;
+    --presence-5: 186 70% 52%;
+    --presence-6: 45 90% 58%;
+    --presence-foreground: 260 30% 8%;
   }
 
   * {
