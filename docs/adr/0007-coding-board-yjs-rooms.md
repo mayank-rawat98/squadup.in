@@ -19,7 +19,11 @@ record. Rooms are found by a short ID that people read to each other.
 
 - **Yjs is the shared state.** Each room has one Yjs document holding a
   `Y.Text` per language (`code:<language>`), a `meta` map with the language
-  everyone is looking at, and a `strokes` array for the whiteboard.
+  everyone is looking at, and the whiteboard: a `pages` array of `{ id }`
+  and one strokes array per page. The first page keeps the original
+  `strokes` key (`strokes:<pageId>` for the rest), so rooms drawn in before
+  pages existed open with their drawing as page 1. Which page you look at is
+  presence, not shared state.
   Presence (who is where, carets, typing, drawing) is y-protocols awareness.
 - **The editor is CodeMirror 6 with y-codemirror.next.** It is far lighter
   than Monaco and themes from the design tokens.
@@ -35,6 +39,15 @@ record. Rooms are found by a short ID that people read to each other.
   10 s, and when the last person leaves), and unloads it a minute later.
 - **Rooms, members and chat are Postgres rows.** Membership is the access
   rule. Chat messages are stored and sent over the same socket.
+- **Rooms last 7 days** (added 2026-10-04, #76). `boards.expiresAt` is set by
+  a database default to creation + 7 days. Opening or joining after that
+  answers 410, and an hourly job closes any live copy (`board:expired`,
+  nothing saved back) and deletes the board; its document, members and chat
+  cascade. The clock runs from creation, not last activity, so the limit is
+  the same for everyone.
+- **Downloading a page is client-side.** The browser redraws the page's
+  strokes onto a canvas cropped to the drawing and saves a PNG; the API is
+  not involved.
 - **Voice is not decided yet.** It's left out of this first build.
 
 ## Alternatives rejected

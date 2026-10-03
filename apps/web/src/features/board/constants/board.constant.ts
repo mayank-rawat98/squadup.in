@@ -72,16 +72,29 @@ export const BOARD_SOCKET_EVENTS = {
   awareness: 'board:awareness',
   chatSend: 'chat:send',
   chatMessage: 'chat:message',
+  expired: 'board:expired',
 } as const;
+
+/** Mirrors the API's BOARD_RETENTION_DAYS: rooms are deleted this long after they're made. */
+export const BOARD_RETENTION_DAYS = 7;
+/** The most pages one whiteboard can have. */
+export const WHITEBOARD_MAX_PAGES = 20;
 
 /*
  * The shared Yjs document's layout, as the API seeds it:
  * `meta` (Y.Map) holds `language`; `code:<language>` (Y.Text) holds each
- * file; `strokes` (Y.Array) holds finished whiteboard strokes.
+ * file; `pages` (Y.Array) lists the whiteboard's pages as `{ id }`, and each
+ * page's finished strokes are a Y.Array of their own. The first page keeps
+ * the bare `strokes` key, so rooms drawn in before pages existed open with
+ * their drawing as page 1.
  */
+const FIRST_PAGE_ID = 'main';
 export const BOARD_DOC = {
   meta: 'meta',
   language: 'language',
-  strokes: 'strokes',
+  pages: 'pages',
+  firstPageId: FIRST_PAGE_ID,
   code: (language: BoardLanguageId) => `code:${language}`,
+  pageStrokes: (pageId: string) =>
+    pageId === FIRST_PAGE_ID ? 'strokes' : `strokes:${pageId}`,
 } as const;

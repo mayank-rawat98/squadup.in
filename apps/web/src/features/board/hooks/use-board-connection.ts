@@ -107,6 +107,19 @@ export function useBoardConnection(code: string): BoardConnection | null {
     socket.on(BOARD_SOCKET_EVENTS.awareness, (update: ArrayBuffer) =>
       applyAwarenessUpdate(awareness, new Uint8Array(update), REMOTE),
     );
+    // The room reached its retention limit and is being deleted: stop, and
+    // don't reconnect to a room that no longer exists.
+    socket.on(BOARD_SOCKET_EVENTS.expired, (body: { message?: unknown }) => {
+      open = false;
+      publish({
+        status: 'refused',
+        error:
+          typeof body?.message === 'string'
+            ? body.message
+            : 'This room has expired.',
+      });
+      socket.disconnect();
+    });
 
     socket.on('connect', async () => {
       let ack: OpenAck;

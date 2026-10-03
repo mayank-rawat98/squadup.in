@@ -1,11 +1,15 @@
 import {
   ConflictException,
   ForbiddenException,
+  GoneException,
   Injectable,
   NotFoundException,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import { BOARD_CODE_MAX_ATTEMPTS } from '../constants/board.constants';
+import {
+  BOARD_CODE_MAX_ATTEMPTS,
+  BOARD_RETENTION_DAYS,
+} from '../constants/board.constants';
 import type { CreateBoardDto, ListBoardPageDto } from '../dto';
 import type { Board, BoardMember } from '../entities';
 import { BoardsRepository } from '../repositories/boards.repository';
@@ -17,6 +21,15 @@ export interface BoardAccess {
 }
 
 const BOARDS_PAGE_SIZE = 20;
+
+const EXPIRED_MESSAGE = `This room has expired. Rooms and everything in them are deleted ${BOARD_RETENTION_DAYS} days after they're made; start a new one to keep going.`;
+
+/**
+ * Expired rooms are refused here even before the hourly sweep deletes them,
+ * so a room's last hour behaves the same as after it's gone.
+ */
+export const isBoardExpired = (board: Pick<Board, 'expiresAt'>, now: Date) =>
+  board.expiresAt.getTime() <= now.getTime();
 
 /** Creating, joining and opening boards. Membership is the access rule. */
 @Injectable()
@@ -43,6 +56,9 @@ export class BoardsService {
         'No room has that ID. Ask whoever invited you to check it.',
       );
     }
+    if (isBoardExpired(board, new Date())) {
+      throw new GoneException(EXPIRED_MESSAGE);
+    }
     const result = await this.boards.addMember(board, userId);
     if (result === 'full') {
       throw new ConflictException(
@@ -62,7 +78,12 @@ export class BoardsService {
   async listForUser(userId: string, query: ListBoardPageDto) {
     const page = query.page ?? 1;
     const limit = query.limit ?? BOARDS_PAGE_SIZE;
-    const { items, total } = await this.boards.listForUser(userId, page, limit);
+    const { items, total } = await this.boards.listForUser(
+      userId,
+      page,
+      limit,
+      new Date(),
+    );
     return { items, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
@@ -80,6 +101,9 @@ export class BoardsService {
       throw new ForbiddenException(
         "You're not in this room. Join it with its room ID first.",
       );
+    }
+    if (isBoardExpired(board, new Date())) {
+      throw new GoneException(EXPIRED_MESSAGE);
     }
     return { board, membership };
   }

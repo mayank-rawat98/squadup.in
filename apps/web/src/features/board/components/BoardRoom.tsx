@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { DoorOpen, RotateCw } from 'lucide-react';
+import { DoorOpen, RotateCw, TimerOff } from 'lucide-react';
 import {
   Alert,
   Button,
@@ -46,6 +46,24 @@ export default function BoardRoom({ code }: BoardRoomProps) {
 
   if (room.isError) {
     const notMember = isApiError(room.error) && room.error.status === 403;
+    const expired = isApiError(room.error) && room.error.status === 410;
+    if (expired) {
+      return (
+        <div className="flex min-h-dvh items-center justify-center px-5 py-16">
+          <EmptyState
+            icon={TimerOff}
+            title="This room has expired"
+            description={getErrorMessage(room.error)}
+            className="w-full max-w-md"
+            action={
+              <Link href={BOARD_PATH} className={buttonVariants()}>
+                Back to rooms
+              </Link>
+            }
+          />
+        </div>
+      );
+    }
     return (
       <div className="flex min-h-dvh items-center justify-center px-5 py-16">
         <div className="flex w-full max-w-md flex-col gap-4">

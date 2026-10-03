@@ -11,6 +11,7 @@ import {
   cn,
 } from '@squadup.in/ui';
 import { useCurrentUser, type CurrentUser } from '@/features/auth';
+import { RecentRooms } from '@/features/board';
 import {
   COMING_UP,
   DASHBOARD_STATS,
@@ -50,6 +51,7 @@ export default function DashboardHome() {
       <Greeting user={user} />
       {isProfileIncomplete(user) && <ProfilePrompt user={user} />}
       <Stats />
+      <RecentRooms />
       <div className="grid gap-10 lg:grid-cols-5">
         <section aria-labelledby="activity-heading" className="lg:col-span-3">
           <Typography

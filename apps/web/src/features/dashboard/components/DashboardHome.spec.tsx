@@ -3,6 +3,10 @@ import { useCurrentUser, type CurrentUser } from '@/features/auth';
 import DashboardHome from './DashboardHome';
 
 jest.mock('@/features/auth', () => ({ useCurrentUser: jest.fn() }));
+// The rooms section loads its own data; it has its own spec.
+jest.mock('@/features/board', () => ({
+  RecentRooms: () => <section aria-label="Your rooms" />,
+}));
 const useCurrentUserMock = jest.mocked(useCurrentUser);
 
 const USER: CurrentUser = {
@@ -51,6 +55,13 @@ describe('DashboardHome', () => {
     expect(
       screen.getByRole('link', { name: /Edit profile/ }).getAttribute('href'),
     ).toBe('/settings/profile');
+  });
+
+  it('shows your coding board rooms', () => {
+    withUser({});
+    render(<DashboardHome />);
+
+    expect(screen.getByRole('region', { name: 'Your rooms' })).toBeTruthy();
   });
 
   it('shows stats as not available rather than as numbers', () => {

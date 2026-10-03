@@ -12,8 +12,10 @@ import {
 } from 'y-protocols/awareness';
 import * as Y from 'yjs';
 import {
+  BOARD_DOC_FIRST_PAGE_ID,
   BOARD_DOC_META,
   BOARD_DOC_META_LANGUAGE,
+  BOARD_DOC_PAGES,
   BOARD_IDLE_UNLOAD_MS,
   BOARD_MAX_DOC_BYTES,
   BOARD_MAX_UPDATE_BYTES,
@@ -23,7 +25,10 @@ import {
   BOARD_STARTER_CODE,
   boardDocCodeKey,
 } from '../constants/board-socket.constants';
-import { BoardLanguage } from '../constants/board.constants';
+import {
+  BOARD_RETENTION_DAYS,
+  BoardLanguage,
+} from '../constants/board.constants';
 import type { Board } from '../entities';
 import { BoardDocumentsRepository } from '../repositories/board-documents.repository';
 
@@ -130,6 +135,22 @@ export class BoardRoomsService implements OnModuleDestroy {
         BOARD_IDLE_UNLOAD_MS,
       );
     }
+  }
+
+  /**
+   * Closes an expired room without saving it: tells everyone in it, then
+   * drops it from memory so nothing writes it back after it's deleted. Waits
+   * for a load in progress, so a room can't reappear behind the sweep.
+   */
+  async evict(boardId: string): Promise<void> {
+    await this.loading.get(boardId)?.catch(() => undefined);
+    const room = this.rooms.get(boardId);
+    if (!room) return;
+    this.rooms.delete(boardId);
+    this.dispose(room);
+    this.broadcast(boardId, BOARD_SOCKET_EVENTS.EXPIRED, {
+      message: `This room has expired. Rooms are deleted ${BOARD_RETENTION_DAYS} days after they're made.`,
+    });
   }
 
   async onModuleDestroy(): Promise<void> {
@@ -265,10 +286,14 @@ export class BoardRoomsService implements OnModuleDestroy {
   }
 }
 
-/** A new room opens in its chosen language with a starter file for every language. */
+/**
+ * A new room opens in its chosen language with a starter file for every
+ * language and one blank whiteboard page.
+ */
 function seed(doc: Y.Doc, language: BoardLanguage): void {
   doc.transact(() => {
     doc.getMap(BOARD_DOC_META).set(BOARD_DOC_META_LANGUAGE, language);
+    doc.getArray(BOARD_DOC_PAGES).push([{ id: BOARD_DOC_FIRST_PAGE_ID }]);
     for (const lang of Object.values(BoardLanguage)) {
       doc.getText(boardDocCodeKey(lang)).insert(0, BOARD_STARTER_CODE[lang]);
     }

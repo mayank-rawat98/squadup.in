@@ -12,6 +12,8 @@ export interface BoardSummary {
   role: BoardRole;
   joinedAt: string;
   createdAt: string;
+  /** When the room and everything in it is deleted. */
+  expiresAt: string;
   closedAt: string | null;
 }
 

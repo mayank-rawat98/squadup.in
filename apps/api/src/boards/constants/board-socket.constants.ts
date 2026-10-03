@@ -16,17 +16,27 @@ export const BOARD_SOCKET_EVENTS = {
   CHAT_SEND: 'chat:send',
   /** server → room: a message someone sent. */
   CHAT_MESSAGE: 'chat:message',
+  /** server → room: the room reached its retention limit and was deleted. */
+  EXPIRED: 'board:expired',
 } as const;
 
 /*
  * The shared Yjs document's layout, which the web app reads and writes too:
  * - `meta` (Y.Map): `language`, the file everyone is looking at
  * - `code:<language>` (Y.Text): that language's file
- * - `strokes` (Y.Array): finished whiteboard strokes, plain objects
+ * - `pages` (Y.Array): the whiteboard's pages in order, as `{ id }` objects
+ * - `strokes` (Y.Array): the first page's finished strokes, plain objects
+ * - `strokes:<pageId>` (Y.Array): every later page's strokes
+ *
+ * The first page keeps the bare `strokes` key so rooms drawn in before pages
+ * existed open with their drawing as page 1. A document with no `pages` yet
+ * has just that page.
  */
 export const BOARD_DOC_META = 'meta';
 export const BOARD_DOC_META_LANGUAGE = 'language';
 export const boardDocCodeKey = (language: BoardLanguage) => `code:${language}`;
+export const BOARD_DOC_PAGES = 'pages';
+export const BOARD_DOC_FIRST_PAGE_ID = 'main';
 
 /** What a new room's files start with, so nobody opens a blank page. */
 export const BOARD_STARTER_CODE: Record<BoardLanguage, string> = {

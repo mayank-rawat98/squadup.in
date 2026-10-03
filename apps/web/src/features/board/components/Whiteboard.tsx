@@ -4,22 +4,26 @@ import {
   type PointerEvent,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
 import {
+  Download,
   Eraser,
   Highlighter,
   type LucideIcon,
   MoveUpRight,
   Pen,
+  Plus,
   Square,
   Trash2,
   Undo2,
 } from 'lucide-react';
-import { Button, cn } from '@squadup.in/ui';
+import { Button, cn, toast } from '@squadup.in/ui';
 import type * as Y from 'yjs';
-import { BOARD_DOC } from '../constants/board.constant';
+import { BOARD_DOC, WHITEBOARD_MAX_PAGES } from '../constants/board.constant';
+import { useWhiteboardPages } from '../hooks/use-whiteboard-pages';
 import {
   type Stroke,
   WHITEBOARD_COLOURS,
@@ -32,6 +36,13 @@ import {
   lastStrokeBy,
   setEnd,
 } from '../utils/whiteboard';
+import {
+  drawingBounds,
+  exportFileName,
+  renderPagePng,
+  saveFile,
+} from '../utils/whiteboard-export';
+import { addPage, pageLabel } from '../utils/whiteboard-pages';
 
 const TOOLS: readonly {
   id: WhiteboardTool;
@@ -58,7 +69,14 @@ const SWATCH_BG: Record<WhiteboardColourId, string> = {
 export interface WhiteboardProps {
   doc: Y.Doc;
   youId: string;
-  /** Names of the others drawing right now. */
+  /** The room's name, for the downloaded file. */
+  roomName: string;
+  /** The page you're looking at; each person picks their own. */
+  pageId: string;
+  onPageChange: (pageId: string) => void;
+  /** How many others are on each page, by page id. */
+  othersOnPage: Readonly<Record<string, number>>;
+  /** Names of the others drawing on this page right now. */
   drawing: readonly string[];
   /** Tells the room whether you're drawing, for everyone else's status. */
   onDrawingChange: (drawing: boolean) => void;
@@ -69,18 +87,38 @@ const newId = () =>
     ? crypto.randomUUID()
     : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
+/** Turns a design token into a CSS colour, as the element sees it now. */
+function tokenColours(el: Element) {
+  const styles = getComputedStyle(el);
+  const token = (name: string) =>
+    `hsl(${styles.getPropertyValue(name).trim()})`;
+  return {
+    colourOf: (id: WhiteboardColourId) =>
+      token(
+        WHITEBOARD_COLOURS.find((c) => c.id === id)?.token ?? '--foreground',
+      ),
+    background: token('--card'),
+  };
+}
+
 /*
- * The room's shared whiteboard. Finished strokes go into the document's
- * `strokes` array, so everyone sees them and they're saved with the room;
- * the stroke being drawn shows only on your screen until you let go, while
- * everyone else sees that you're drawing. Ink colours are design tokens, so
- * the board follows the theme.
+ * The room's shared whiteboard. It has pages: each page's finished strokes
+ * are their own array in the document, so everyone sees them and they're
+ * saved with the room. Everyone shares the pages but picks which one to look
+ * at; New page adds one for everyone and takes only you there. The stroke
+ * being drawn shows only on your screen until you let go, while everyone
+ * else sees that you're drawing. Ink colours are design tokens, so the board
+ * follows the theme.
  *
  * Drawing needs a pointer; everything else here is a real button.
  */
 export default function Whiteboard({
   doc,
   youId,
+  roomName,
+  pageId,
+  onPageChange,
+  othersOnPage,
   drawing,
   onDrawingChange,
 }: WhiteboardProps) {
@@ -89,21 +127,26 @@ export default function Whiteboard({
   const [size, setSize] = useState<number>(4);
   const [canUndo, setCanUndo] = useState(false);
   const [isEmpty, setIsEmpty] = useState(true);
+  const [hasInk, setHasInk] = useState(false);
+  const [notice, setNotice] = useState('');
   const wrap = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const current = useRef<Stroke | null>(null);
-  const strokes = doc.getArray<Stroke>(BOARD_DOC.strokes);
+  const pages = useWhiteboardPages(doc);
+  const pageIndex = Math.max(
+    0,
+    pages.findIndex((p) => p.id === pageId),
+  );
+  const strokes = useMemo(
+    () => doc.getArray<Stroke>(BOARD_DOC.pageStrokes(pageId)),
+    [doc, pageId],
+  );
 
   const redraw = useCallback(() => {
     const el = canvas.current;
     const ctx = el?.getContext('2d');
     if (!el || !ctx) return;
-    const styles = getComputedStyle(el);
-    const colourOf = (id: WhiteboardColourId) => {
-      const token =
-        WHITEBOARD_COLOURS.find((c) => c.id === id)?.token ?? '--foreground';
-      return `hsl(${styles.getPropertyValue(token).trim()})`;
-    };
+    const { colourOf } = tokenColours(el);
     const dpr = window.devicePixelRatio || 1;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, el.width, el.height);
@@ -112,6 +155,7 @@ export default function Whiteboard({
     for (const stroke of all) drawStroke(ctx, stroke, colourOf);
     if (current.current) drawStroke(ctx, current.current, colourOf);
     setIsEmpty(all.length === 0);
+    setHasInk(drawingBounds(all) !== null);
     setCanUndo(lastStrokeBy(all, youId) !== -1);
   }, [strokes, youId]);
 
@@ -189,12 +233,44 @@ export default function Whiteboard({
   const clear = () => {
     if (
       window.confirm(
-        "Clear the whiteboard for everyone in the room? This removes every drawing and can't be undone.",
+        `Clear ${pageLabel(pageIndex)} for everyone in the room? This removes every drawing on it and can't be undone.`,
       )
     ) {
       strokes.delete(0, strokes.length);
     }
   };
+
+  const newPage = () => {
+    const page = addPage(doc, newId());
+    if (page) {
+      onPageChange(page.id);
+      setNotice(`${pageLabel(pages.length)} added. You're on it now.`);
+    }
+  };
+
+  const download = async () => {
+    const el = canvas.current;
+    if (!el) return;
+    const { colourOf, background } = tokenColours(el);
+    try {
+      const png = await renderPagePng(
+        strokes.toArray().filter(isStroke),
+        colourOf,
+        background,
+        window.devicePixelRatio || 1,
+      );
+      if (!png) {
+        toast.error('There is nothing on this page to download yet.');
+        return;
+      }
+      saveFile(png, exportFileName(roomName, pageIndex + 1));
+      toast.success(`${pageLabel(pageIndex)} saved as an image.`);
+    } catch {
+      toast.error("We couldn't create the image. Please try again.");
+    }
+  };
+
+  const atPageLimit = pages.length >= WHITEBOARD_MAX_PAGES;
 
   const pill = (active: boolean) =>
     cn(
@@ -286,14 +362,75 @@ export default function Whiteboard({
           <Button
             variant="outline"
             size="sm"
+            onClick={() => void download()}
+            disabled={!hasInk}
+          >
+            <Download aria-hidden="true" className="h-4 w-4" />
+            Download
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
             onClick={clear}
             disabled={isEmpty}
           >
             <Trash2 aria-hidden="true" className="h-4 w-4" />
-            Clear for everyone
+            Clear page
           </Button>
         </div>
       </div>
+      <nav
+        aria-label="Whiteboard pages"
+        className="border-border bg-card flex items-center gap-2 border-b px-3 py-1.5"
+      >
+        <ul className="flex min-w-0 flex-1 gap-1 overflow-x-auto">
+          {pages.map((page, index) => {
+            const others = othersOnPage[page.id] ?? 0;
+            const active = page.id === pageId;
+            return (
+              <li key={page.id} className="shrink-0">
+                <button
+                  type="button"
+                  aria-current={active ? 'page' : undefined}
+                  onClick={() => onPageChange(page.id)}
+                  className={cn(
+                    pill(active),
+                    'text-body-sm h-8 gap-1.5 px-2.5 font-medium',
+                  )}
+                >
+                  {pageLabel(index)}
+                  {others > 0 ? (
+                    <span className="bg-primary text-primary-foreground text-caption inline-flex h-4.5 min-w-4.5 items-center justify-center rounded-full px-1">
+                      <span aria-hidden="true">{others}</span>
+                      <span className="sr-only">
+                        , {others} {others === 1 ? 'other person' : 'others'}{' '}
+                        here
+                      </span>
+                    </span>
+                  ) : null}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={newPage}
+          disabled={atPageLimit}
+          title={
+            atPageLimit
+              ? `A whiteboard can have up to ${WHITEBOARD_MAX_PAGES} pages.`
+              : undefined
+          }
+        >
+          <Plus aria-hidden="true" className="h-4 w-4" />
+          New page
+        </Button>
+        <span role="status" className="sr-only">
+          {notice}
+        </span>
+      </nav>
       <div
         ref={wrap}
         className="bg-card relative min-h-0 flex-1 overflow-hidden bg-[radial-gradient(var(--color-border)_1px,transparent_1.2px)] bg-size-[22px_22px]"
