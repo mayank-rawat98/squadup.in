@@ -39,6 +39,7 @@ import ConsolePanel from './ConsolePanel';
 import MembersList from './MembersList';
 import PanelToggle from './PanelToggle';
 import ResizeHandle from './ResizeHandle';
+import Whiteboard from './Whiteboard';
 
 /* CodeMirror is client-only and sizeable; load it with the room, not the app. */
 const CodeEditor = dynamic(() => import('./editor/CodeEditor'), {
@@ -76,7 +77,8 @@ export default function RoomWorkspace({ board, you }: RoomWorkspaceProps) {
     board.language,
   );
   const lang = boardLanguage(language);
-  const [view] = useState<BoardView>('code');
+  const [view, setView] = useState<BoardView>('code');
+  const [drawing, setDrawing] = useState(false);
   const [caretLine, setCaretLine] = useState<number>();
   const [following, setFollowing] = useState<string | null>(null);
   const [membersOpen, setMembersOpen] = useState(true);
@@ -88,6 +90,8 @@ export default function RoomWorkspace({ board, you }: RoomWorkspaceProps) {
   const queryClient = useQueryClient();
   const membersId = useId();
   const chatId = useId();
+  const codePanelId = useId();
+  const boardPanelId = useId();
   const live = connection?.status === 'live';
   const chat = useBoardChat(board.code, connection?.socket, live);
 
@@ -131,6 +135,7 @@ export default function RoomWorkspace({ board, you }: RoomWorkspaceProps) {
           },
           view,
           line: caretLine,
+          drawing,
           typing,
         }
       : null,
@@ -153,13 +158,18 @@ export default function RoomWorkspace({ board, you }: RoomWorkspaceProps) {
     ? peers.find((p) => p.user.id === following)
     : undefined;
   const followedMember = members.find((m) => m.id === following);
-  // Following stops by itself when the person leaves.
+  // Following stops by itself when the person leaves, and switches tab with them.
+  const followedView = followed?.view;
   useEffect(() => {
-    if (following && !followed) setFollowing(null);
-  }, [following, followed]);
+    if (following && !followedView) setFollowing(null);
+    if (followedView) setView(followedView);
+  }, [following, followedView]);
 
   const typingNames = [
     ...new Set(peers.filter((p) => p.typing).map((p) => p.user.name)),
+  ];
+  const drawingNames = [
+    ...new Set(peers.filter((p) => p.drawing).map((p) => p.user.name)),
   ];
   const colourOf = (userId: string) =>
     members.find((m) => m.id === userId)?.colour;
@@ -275,39 +285,69 @@ export default function RoomWorkspace({ board, you }: RoomWorkspaceProps) {
 
       <main className="flex h-dvh min-w-0 flex-1 flex-col lg:h-auto">
         <div className="border-border bg-muted/40 flex flex-wrap items-center gap-x-3 gap-y-2 border-b px-3 py-2">
-          <span className="bg-accent text-accent-foreground rounded-md px-2.5 py-1 font-mono text-caption">
-            {lang.file}
-          </span>
-          <label
-            htmlFor="board-language"
-            className="text-muted-foreground text-caption"
+          <div
+            role="tablist"
+            aria-label="Board view"
+            className="bg-muted flex gap-0.5 rounded-lg p-0.5"
           >
-            Language
-          </label>
-          <select
-            id="board-language"
-            value={language}
-            onChange={(event) =>
-              setLanguage(event.target.value as BoardLanguageId)
-            }
-            className={inputVariants({ size: 'sm', className: 'w-auto' })}
-          >
-            {BOARD_LANGUAGES.map((l) => (
-              <option key={l.id} value={l.id}>
-                {l.label}
-              </option>
+            {(
+              [
+                ['code', 'Code', codePanelId],
+                ['board', 'Whiteboard', boardPanelId],
+              ] as const
+            ).map(([id, label, panel]) => (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                aria-selected={view === id}
+                aria-controls={panel}
+                onClick={() => setView(id)}
+                className={cn(
+                  'focus-visible:ring-ring h-8 cursor-pointer rounded-md px-3.5 text-body-sm font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none',
+                  view === id
+                    ? 'bg-card text-foreground shadow-1'
+                    : 'text-muted-foreground hover:text-foreground',
+                )}
+              >
+                {label}
+              </button>
             ))}
-          </select>
-          <Button
-            size="sm"
-            onClick={() => {
-              setConsoleOpen(true);
-              roomConsole.run(lang, stdin);
-            }}
-          >
-            <Play aria-hidden="true" className="h-3.5 w-3.5 fill-current" />
-            Run {lang.file}
-          </Button>
+          </div>
+          {view === 'code' ? (
+            <>
+              <label
+                htmlFor="board-language"
+                className="text-muted-foreground text-caption"
+              >
+                Language
+              </label>
+              <select
+                id="board-language"
+                value={language}
+                onChange={(event) =>
+                  setLanguage(event.target.value as BoardLanguageId)
+                }
+                className={inputVariants({ size: 'sm', className: 'w-auto' })}
+              >
+                {BOARD_LANGUAGES.map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {l.label}
+                  </option>
+                ))}
+              </select>
+              <Button
+                size="sm"
+                onClick={() => {
+                  setConsoleOpen(true);
+                  roomConsole.run(lang, stdin);
+                }}
+              >
+                <Play aria-hidden="true" className="h-3.5 w-3.5 fill-current" />
+                Run {lang.file}
+              </Button>
+            </>
+          ) : null}
           <Badge variant={status.variant} role="status" className="ml-auto">
             {status.label}
           </Badge>
@@ -343,7 +383,13 @@ export default function RoomWorkspace({ board, you }: RoomWorkspaceProps) {
           </div>
         ) : null}
 
-        <div className="min-h-0 flex-1">
+        <div
+          id={codePanelId}
+          role="tabpanel"
+          aria-label="Code"
+          hidden={view !== 'code'}
+          className="min-h-0 flex-1"
+        >
           {connection ? (
             <CodeEditor
               doc={connection.doc}
@@ -355,22 +401,42 @@ export default function RoomWorkspace({ board, you }: RoomWorkspaceProps) {
             />
           ) : null}
         </div>
+        <div
+          id={boardPanelId}
+          role="tabpanel"
+          aria-label="Whiteboard"
+          hidden={view !== 'board'}
+          className="min-h-0 flex-1"
+        >
+          {connection && view === 'board' ? (
+            <Whiteboard
+              doc={connection.doc}
+              youId={you.id}
+              drawing={drawingNames}
+              onDrawingChange={setDrawing}
+            />
+          ) : null}
+        </div>
 
-        {consoleOpen ? (
-          <ResizeHandle
-            {...consoleSize.separator}
-            aria-label="Resize the console"
-          />
+        {view === 'code' ? (
+          <>
+            {consoleOpen ? (
+              <ResizeHandle
+                {...consoleSize.separator}
+                aria-label="Resize the console"
+              />
+            ) : null}
+            <ConsolePanel
+              open={consoleOpen}
+              onToggle={() => setConsoleOpen((open) => !open)}
+              lines={roomConsole.lines}
+              onClear={roomConsole.clear}
+              stdin={stdin}
+              onStdinChange={setStdin}
+              height={consoleSize.size}
+            />
+          </>
         ) : null}
-        <ConsolePanel
-          open={consoleOpen}
-          onToggle={() => setConsoleOpen((open) => !open)}
-          lines={roomConsole.lines}
-          onClear={roomConsole.clear}
-          stdin={stdin}
-          onStdinChange={setStdin}
-          height={consoleSize.size}
-        />
       </main>
     </div>
   );
