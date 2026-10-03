@@ -8,7 +8,7 @@ SquadUp is early, with little traffic and a budget for one server. That server a
 
 ## Decision
 
-- Production is one Docker Compose stack (`compose.yml`, profile `production`) on one VPS: `server`, `client`, `ops`, Postgres, Redis, MongoDB, RabbitMQ, MinIO, Prometheus and Grafana.
+- Production is one Docker Compose stack (`compose.yml`, profile `production`) on one VPS: `server`, `client`, `ops`, Postgres, Redis, MongoDB, RabbitMQ, RustFS, Prometheus and Grafana.
 - **Caddy** is the only process bound to ports 80 and 443. It obtains and renews TLS certificates on its own, so there are no certificate files to mount. It has one site block per subdomain, with hostnames from env vars, and it also fronts the other stack's sites through the external `novagate-edge` network.
 - Services talk to each other by compose service name on internal networks. Only Caddy is public.
 - `deploy.prod.yml` builds only the images whose paths changed, pushes them to GHCR tagged `latest` and with the git SHA, runs migrations in a one-off container, then runs `docker compose up -d`. A failed migration blocks the deploy.

@@ -21,20 +21,49 @@ services:
       timeout: 10s
       retries: 5
 
-  minio:
-    image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
-    container_name: squadup-minio
+  # S3-compatible object storage. RustFS replaced MinIO, whose free images are
+  # gone upstream. The API still talks to it with the `minio` SDK and its
+  # MINIO_* settings; only the server changed. Console:
+  # http://localhost:9001/rustfs/console/ (the bare `/` answers 403).
+  rustfs:
+    image: rustfs/rustfs:1.0.0@sha256:8cc9801755448b71a786705ce76692c77e14936cccd87cf2fc31842e58f4d1ff
+    container_name: squadup-rustfs
+    restart: unless-stopped
     profiles:
       - development
     environment:
-      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
-      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+      RUSTFS_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      RUSTFS_SECRET_KEY: ${MINIO_SECRET_KEY}
+      RUSTFS_VOLUMES: /data
+      RUSTFS_ADDRESS: 0.0.0.0:9000
+      RUSTFS_CONSOLE_ENABLE: 'true'
+      RUSTFS_CONSOLE_ADDRESS: 0.0.0.0:9001
+      # Lets the browser use presigned URLs (uploads go straight to storage).
+      RUSTFS_CORS_ALLOWED_ORIGINS: ${CLIENT_URL},${OPS_URL}
+      # The image otherwise logs to files inside the container.
+      RUSTFS_OBS_LOG_DIRECTORY: ''
     ports:
       - '${MINIO_PORT:-9000}:9000'
       - '${MINIO_CONSOLE_PORT:-9001}:9001'
+    # A named volume, not a bind mount: Docker seeds it with the image's /data,
+    # owned by the image's non-root user. A bind-mount folder Docker creates is
+    # root-owned, and RustFS then dies with "Permission denied (os error 13)".
     volumes:
-      - ./minio_data:/data
-    command: server /data --console-address ":9001"
+      - rustfs_data:/data
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'curl',
+          '-fsS',
+          '-o',
+          '/dev/null',
+          'http://localhost:9000/health',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
   redis:
     image: redis:7-alpine
@@ -85,12 +114,12 @@ services:
   #     - SPACES_ENDPOINT=${S3_ENDPOINT}
   #     - S3_RETENTION_DAYS=${S3_RETENTION_DAYS}
   #   volumes:
-  #     # 1. MOUNT MINIO DATA (Read-Only) - Critical for file backup
-  #     - ./minio_data:/data_to_backup
+  #     # 1. MOUNT RUSTFS DATA (Read-Only) - Critical for file backup
+  #     - rustfs_data:/data_to_backup
   #     # 2. Local storage for logs/temp backups (Optional)
   #     - ./backup_data:/backups
   #   depends_on:
-  #     minio:
+  #     rustfs:
   #       condition: service_started
   #     # postgres:
   #     #   condition: service_healthy
@@ -148,4 +177,6 @@ volumes:
   mongodb_data:
     driver: local
   redis_data:
+    driver: local
+  rustfs_data:
     driver: local

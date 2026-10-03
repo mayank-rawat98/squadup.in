@@ -16,7 +16,7 @@ Guidance for Claude Code (and anyone else) working in this repository. Read it f
 | Frontend       | Next.js 16 (App Router), React 19, Tailwind CSS 4, `tailwind-variants`, `motion/react`, lucide  |
 | Data           | PostgreSQL via **TypeORM** (migrations only, `synchronize: false`), Redis                       |
 | Audit pipeline | RabbitMQ (with a dead-letter queue) → MongoDB (Mongoose)                                        |
-| Storage        | MinIO (S3-compatible), served through the CDN domain                                            |
+| Storage        | RustFS (S3-compatible, used through the `minio` SDK), served through the CDN domain             |
 | Auth           | JWT access/refresh, passkeys (WebAuthn), TOTP 2FA, Google sign-in; a separate staff identity    |
 | Infra          | Docker images on GHCR, one Docker Compose stack on a VPS behind **Caddy**, Prometheus + Grafana |
 | CI/CD          | `deploy.prod.yml` on push to `main`, which runs `ci.yml` first and deploys only if it passes    |
@@ -37,7 +37,7 @@ libs/
 docker/       One Dockerfile per app (api, web, ops) + prometheus config
 caddy/        Caddyfile: TLS and one site block per subdomain
 compose.yml   Production stack (profile: production)
-compose.dev.yml  Local Postgres, Redis, MongoDB, RabbitMQ, MinIO (profile: development)
+compose.dev.yml  Local Postgres, Redis, MongoDB, RabbitMQ, RustFS (profile: development)
 tools/        Repo scripts (sync-labels.sh)
 docs/         adr/ (decision records), frontend-conventions.md
 .github/      workflows/, ISSUE_TEMPLATE/, pull_request_template.md
@@ -54,7 +54,7 @@ Always use these instead of guessing. Projects are named `@squadup.in/<dir>`.
 ```sh
 npm install                              # install (npm only); also installs the git hooks
 cp .env.example .env.local               # local config; defaults work as-is
-npm run docker:up                        # local Postgres, Redis, MongoDB, RabbitMQ, MinIO
+npm run docker:up                        # local Postgres, Redis, MongoDB, RabbitMQ, RustFS
 npm run migration:run                    # apply TypeORM migrations
 npx nx serve @squadup.in/api             # API on :8080, Swagger at /api/docs
 npx nx serve @squadup.in/web             # web on :3001
@@ -243,7 +243,7 @@ Quality floor (non-negotiable):
 
 ### Caddy
 
-- Caddy is the only public entry point: automatic TLS and one site block per subdomain (web, `www` redirect, ops, api, cdn, minio console, metrics), driven by env vars in `caddy/Caddyfile`.
+- Caddy is the only public entry point: automatic TLS and one site block per subdomain (web, `www` redirect, ops, api, cdn, storage console, metrics), driven by env vars in `caddy/Caddyfile`.
 - A new public service means a Caddyfile block, a compose service and the env vars for its domain, in the same PR.
 - Validate with `caddy validate` before deploying a change.
 
