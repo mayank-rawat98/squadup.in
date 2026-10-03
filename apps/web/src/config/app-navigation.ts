@@ -30,7 +30,7 @@ export const APP_NAV: readonly AppNavItem[] = [
     comingSoon: true,
   },
   { label: 'Arenas', href: '/arenas', icon: Swords, comingSoon: true },
-  { label: 'Coding board', href: '/board', icon: Users, comingSoon: true },
+  { label: 'Coding board', href: '/board', icon: Users },
   {
     label: 'Leaderboard',
     href: '/leaderboard',

@@ -27,7 +27,15 @@ describe('AppSidebarNav', () => {
 
     expect(screen.queryByRole('link', { name: /Challenges/ })).toBeNull();
     expect(screen.getByText('Challenges')).toBeTruthy();
-    expect(screen.getAllByText('Soon')).toHaveLength(5);
+    expect(screen.getAllByText('Soon')).toHaveLength(4);
+  });
+
+  it('links to the coding board now that it is built', () => {
+    render(<AppSidebarNav />);
+
+    expect(
+      screen.getByRole('link', { name: 'Coding board' }).getAttribute('href'),
+    ).toBe('/board');
   });
 
   it('tells the drawer a link was followed', () => {
