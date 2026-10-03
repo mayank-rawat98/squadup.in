@@ -22,6 +22,13 @@
   },
   "private": true,
   "dependencies": {
+    "@codemirror/lang-cpp": "^6.0.3",
+    "@codemirror/lang-java": "^6.0.2",
+    "@codemirror/lang-javascript": "^6.2.5",
+    "@codemirror/lang-python": "^6.2.1",
+    "@codemirror/language": "^6.12.4",
+    "@codemirror/state": "^6.7.6",
+    "@codemirror/view": "^6.43.13",
     "@nestjs/common": "^11.0.0",
     "@nestjs/config": "^4.0.4",
     "@nestjs/core": "^11.0.0",
@@ -43,6 +50,7 @@
     "bcryptjs": "^3.0.3",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
+    "codemirror": "^6.0.2",
     "cookie-parser": "^1.4.7",
     "dockerode": "^5.0.1",
     "express-basic-auth": "^1.2.1",
@@ -68,7 +76,10 @@
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.4",
     "typeorm": "^1.1.0",
-    "uuid": "^11.1.1"
+    "uuid": "^11.1.1",
+    "y-codemirror.next": "^0.3.6",
+    "y-protocols": "^1.0.7",
+    "yjs": "^13.6.33"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.5.3",
