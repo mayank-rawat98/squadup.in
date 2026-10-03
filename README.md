@@ -37,7 +37,7 @@ SquadUp is in early development.
 | Operations console                                                                                  | Scaffolded |
 | Arenas and proctoring                                                                               | Planned    |
 | Solo challenges and leaderboards                                                                    | Planned    |
-| Coding board: rooms, shared editor, chat and whiteboard (voice and playground to come)              | Built      |
+| Coding board: rooms, shared editor, chat, whiteboard and a React sandbox (voice to come)            | Built      |
 | Rewards store                                                                                       | Planned    |
 
 What's being built next, and how, is in [ROADMAP.md](ROADMAP.md).
