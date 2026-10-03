@@ -20,7 +20,7 @@ export interface PackagesPanelProps {
 }
 
 /*
- * npm packages for the project, written to package.json's dependencies.
+ * npm packages for the project (inside the sidebar's Packages section), written to package.json's dependencies.
  * The preview installs them from npm when package.json changes; a download
  * installs them with `npm install`.
  */
@@ -54,15 +54,7 @@ export default function PackagesPanel({ packageJson }: PackagesPanelProps) {
   };
 
   return (
-    <section aria-labelledby={`${id}-heading`} className="flex flex-col">
-      <div className="flex h-10 items-center px-4">
-        <h2
-          id={`${id}-heading`}
-          className="text-muted-foreground text-caption font-semibold"
-        >
-          Packages
-        </h2>
-      </div>
+    <div className="flex flex-col">
       <form onSubmit={add} className="flex flex-col gap-2 px-3 pb-2">
         <label htmlFor={`${id}-input`} className="sr-only">
           Package to add, for example zod or zod@3
@@ -127,6 +119,6 @@ export default function PackagesPanel({ packageJson }: PackagesPanelProps) {
           </li>
         ))}
       </ul>
-    </section>
+    </div>
   );
 }

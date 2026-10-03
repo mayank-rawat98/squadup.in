@@ -51,6 +51,10 @@ building, not grading.
 - **The new-tab preview follows the editor over a `BroadcastChannel`.** It
   opens on the saved project and then applies each version the editor tab
   posts, with no server round trip.
+- **Folders are implied by file paths.** The explorer is a VS Code-style
+  tree (folders, a right-click menu, renaming in place), but the project is
+  still a flat map of path to source. A folder with nothing in it yet is
+  kept by the explorer until a file goes in it, and isn't saved.
 - **Downloading is client-side**: the browser zips the files with `fflate`.
 
 ## Alternatives rejected
