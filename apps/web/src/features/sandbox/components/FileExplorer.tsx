@@ -10,7 +10,6 @@ import {
   useRef,
   useState,
 } from 'react';
-import { useSandpack } from '@codesandbox/sandpack-react';
 import {
   ChevronRight,
   ChevronsDownUp,
@@ -35,7 +34,7 @@ import {
   SANDBOX_REQUIRED_FILES,
   SANDBOX_START_FILE,
 } from '../constants/sandbox.constant';
-import type { SandboxFiles } from '../types/sandbox.types';
+import type { ProjectFiles } from '../types/sandbox.types';
 import {
   ROOT_FOLDER,
   type TreeNode,
@@ -53,7 +52,7 @@ import ContextMenu, { type ContextMenuItem } from './ContextMenu';
 import SidebarSection from './SidebarSection';
 
 export interface FileExplorerProps {
-  files: SandboxFiles;
+  project: ProjectFiles;
   open: boolean;
   onToggle: () => void;
   className?: string;
@@ -109,13 +108,12 @@ const where = (folder: string) =>
  * here until a file goes in it.
  */
 export default function FileExplorer({
-  files,
+  project,
   open,
   onToggle,
   className,
 }: FileExplorerProps) {
-  const { sandpack } = useSandpack();
-  const { activeFile } = sandpack;
+  const { files, activeFile } = project;
   const filePaths = useMemo(() => Object.keys(files), [files]);
   const [emptyFolders, setEmptyFolders] = useState<string[]>([]);
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(
@@ -215,8 +213,8 @@ export default function FileExplorer({
         emptyFolders,
       );
       if ('error' in result) return fail(result.error);
-      sandpack.addFile(result.path, starterCode(result.path));
-      sandpack.openFile(result.path);
+      project.addFiles({ [result.path]: starterCode(result.path) });
+      project.openFile(result.path);
       setEmptyFolders((folders) =>
         folders.filter((f) => !isWithin(result.path, f)),
       );
@@ -264,12 +262,12 @@ export default function FileExplorer({
     moves: readonly [string, string][],
   ) => {
     if (moves.length > 0) {
-      sandpack.addFile(
+      project.addFiles(
         Object.fromEntries(moves.map(([old, next]) => [next, files[old]])),
       );
       const movedActive = moves.find(([old]) => old === activeFile);
-      if (movedActive) sandpack.openFile(movedActive[1]);
-      for (const [old] of moves) sandpack.deleteFile(old);
+      if (movedActive) project.openFile(movedActive[1]);
+      for (const [old] of moves) project.deleteFile(old);
     }
     const rename = (path: string) =>
       isWithin(path, from) ? `${to}${path.slice(from.length)}` : path;
@@ -292,13 +290,13 @@ export default function FileExplorer({
     // Sandpack picks the next tab badly when the last open one goes, so
     // open a file that stays first.
     const staying = filePaths.filter((p) => !doomed.includes(p));
-    if (sandpack.visibleFiles.every((p) => doomed.includes(p))) {
+    if (project.visibleFiles.every((p) => doomed.includes(p))) {
       const next = staying.includes(SANDBOX_START_FILE)
         ? SANDBOX_START_FILE
         : staying[0];
-      if (next) sandpack.openFile(next);
+      if (next) project.openFile(next);
     }
-    for (const path of doomed) sandpack.deleteFile(path);
+    for (const path of doomed) project.deleteFile(path);
 
     const parent = parentOf(node.path);
     setEmptyFolders((folders) => {
@@ -318,7 +316,7 @@ export default function FileExplorer({
     setSelected(node.path);
     setFocused(node.path);
     if (node.kind === 'folder') toggleFolder(node.path);
-    else sandpack.openFile(node.path);
+    else project.openFile(node.path);
   };
 
   const menuItems = (node: TreeNode | null): ContextMenuItem[] => {

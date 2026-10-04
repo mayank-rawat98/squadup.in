@@ -13,33 +13,45 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Request as ExpressRequest } from 'express';
 import { PermissionsGuard } from '../../common/guards/auth.guard';
+import { RequireExperimentalFeature } from '../../decorators/guards.decorator';
 import {
   FormRateLimit,
   UserRateLimit,
 } from '../../decorators/throttler.decorator';
+import { FEATURE_FLAGS } from '../../feature-flags/feature-flags.constants';
+import { ExperimentalFeatureGuard } from '../../feature-flags/guards/experimental-feature.guard';
 import {
   toBoardDetail,
   toBoardMessage,
   toBoardSummary,
 } from '../boards.presenter';
-import { BoardCodeDto, CreateBoardDto, ListBoardPageDto } from '../dto';
+import {
+  BoardCodeDto,
+  CreateBoardDto,
+  ListBoardPageDto,
+  StartBoardSandboxDto,
+} from '../dto';
 import { BoardChatService } from '../services/board-chat.service';
+import { BoardSandboxService } from '../services/board-sandbox.service';
 import { BoardsService } from '../services/boards.service';
 
 /**
  * Coding board rooms for the signed-in user. Live editing, presence and chat
  * sending happen over the `/boards` socket (BoardsGateway); these routes
- * create and join rooms and load what a room needs to open.
+ * create and join rooms and load what a room needs to open. Only people the
+ * `codingBoard` flag reaches get in.
  */
 @ApiTags('boards')
 @ApiBearerAuth('JWT-auth')
 @Controller({ version: '1', path: 'boards' })
-@UseGuards(PermissionsGuard)
+@UseGuards(PermissionsGuard, ExperimentalFeatureGuard)
+@RequireExperimentalFeature(FEATURE_FLAGS.CODING_BOARD)
 @UserRateLimit()
 export class BoardsController {
   constructor(
     private readonly boards: BoardsService,
     private readonly chat: BoardChatService,
+    private readonly sandbox: BoardSandboxService,
   ) {}
 
   @Post()
@@ -123,6 +135,27 @@ export class BoardsController {
       totalItems: result.total,
       totalPages: result.totalPages,
       message: 'Messages fetched successfully',
+    };
+  }
+
+  /** Editing it happens over the socket; this only creates it, once per room. */
+  @Post(':code/sandbox')
+  @FormRateLimit()
+  @RequireExperimentalFeature(FEATURE_FLAGS.REACT_SANDBOX)
+  @ApiOperation({
+    summary:
+      "Start the room's shared React project from the template or one of your sandboxes",
+  })
+  async startSandbox(
+    @Request() req: ExpressRequest,
+    @Param() params: BoardCodeDto,
+    @Body() dto: StartBoardSandboxDto,
+  ) {
+    await this.sandbox.start(req.auth.userId, params.code, dto);
+    return {
+      success: true,
+      data: null,
+      message: 'React project started',
     };
   }
 }

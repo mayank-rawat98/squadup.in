@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import type { Awareness } from 'y-protocols/awareness';
 
 /** Which part of the board someone is looking at. */
-export type BoardView = 'code' | 'board';
+export type BoardView = 'code' | 'board' | 'sandbox';
 
 /** What each client publishes about itself in awareness. */
 export interface PresenceState {
@@ -18,6 +18,8 @@ export interface PresenceState {
   view: BoardView;
   /** The whiteboard page open, by id. */
   page?: string;
+  /** The React project file open (`/src/App.tsx`), in the sandbox view. */
+  file?: string;
   /** 1-based line of the caret in the open file, when known. */
   line?: number;
   /** True while drawing on the whiteboard. */

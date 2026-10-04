@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect, useId, useMemo, useState } from 'react';
-import dynamic from 'next/dynamic';
+import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Play } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -11,7 +10,6 @@ import {
   Button,
   CopyButton,
   LogoMark,
-  Spinner,
   buttonVariants,
   cn,
   inputVariants,
@@ -38,24 +36,18 @@ import { type RoomMember, roomMembers } from '../utils/room-members';
 import { countOthersOnPages } from '../utils/whiteboard-pages';
 import ChatPanel from './ChatPanel';
 import ConsolePanel from './ConsolePanel';
+import CodeEditor from './editor/LazyCodeEditor';
 import MembersList from './MembersList';
 import PanelToggle from './PanelToggle';
 import ResizeHandle from './ResizeHandle';
+import RoomSandbox from './RoomSandbox';
 import Whiteboard from './Whiteboard';
-
-/* CodeMirror is client-only and sizeable; load it with the room, not the app. */
-const CodeEditor = dynamic(() => import('./editor/CodeEditor'), {
-  ssr: false,
-  loading: () => (
-    <div className="flex h-full items-center justify-center">
-      <Spinner label="Loading the editor" />
-    </div>
-  ),
-});
 
 export interface RoomWorkspaceProps {
   board: BoardDetail;
   you: { id: string; name: string };
+  /** Whether the reactSandbox flag reaches you, which adds the React tab. */
+  sandboxEnabled?: boolean;
 }
 
 const STATUS_BADGE = {
@@ -71,7 +63,11 @@ const STATUS_BADGE = {
  * dragged or moved with the arrow keys, and the people list, chat and
  * console can each be collapsed; whatever stays open takes the space. Below `lg` the panels stack and the page scrolls.
  */
-export default function RoomWorkspace({ board, you }: RoomWorkspaceProps) {
+export default function RoomWorkspace({
+  board,
+  you,
+  sandboxEnabled = false,
+}: RoomWorkspaceProps) {
   const connection = useBoardConnection(board.code);
   const peers = usePeers(connection?.awareness);
   const [language, setLanguage] = useSharedLanguage(
@@ -83,6 +79,12 @@ export default function RoomWorkspace({ board, you }: RoomWorkspaceProps) {
   const [drawing, setDrawing] = useState(false);
   const [pageId, setPageId] = useState<string>(BOARD_DOC.firstPageId);
   const [caretLine, setCaretLine] = useState<number>();
+  const [projectPresence, setProjectPresence] = useState<{
+    file?: string;
+    line?: number;
+  }>({});
+  // The project and its preview load on first visit, then stay running.
+  const [sandboxOpened, setSandboxOpened] = useState(false);
   const [following, setFollowing] = useState<string | null>(null);
   const [membersOpen, setMembersOpen] = useState(true);
   const [chatOpen, setChatOpen] = useState(true);
@@ -95,6 +97,7 @@ export default function RoomWorkspace({ board, you }: RoomWorkspaceProps) {
   const chatId = useId();
   const codePanelId = useId();
   const boardPanelId = useId();
+  const sandboxPanelId = useId();
   const live = connection?.status === 'live';
   const chat = useBoardChat(board.code, connection?.socket, live);
 
@@ -138,7 +141,8 @@ export default function RoomWorkspace({ board, you }: RoomWorkspaceProps) {
           },
           view,
           page: pageId,
-          line: caretLine,
+          file: view === 'sandbox' ? projectPresence.file : undefined,
+          line: view === 'sandbox' ? projectPresence.line : caretLine,
           drawing,
           typing,
         }
@@ -167,8 +171,19 @@ export default function RoomWorkspace({ board, you }: RoomWorkspaceProps) {
   const followedPage = followed?.page;
   useEffect(() => {
     if (following && !followedView) setFollowing(null);
-    if (followedView) setView(followedView);
-  }, [following, followedView]);
+    // Without the React tab, following someone into it keeps your view.
+    if (followedView && (followedView !== 'sandbox' || sandboxEnabled)) {
+      setView(followedView);
+    }
+  }, [following, followedView, sandboxEnabled]);
+  useEffect(() => {
+    if (view === 'sandbox') setSandboxOpened(true);
+  }, [view]);
+  const onProjectPresence = useCallback(
+    (presence: { file?: string; line?: number }) =>
+      setProjectPresence(presence),
+    [],
+  );
   useEffect(() => {
     if (followedPage) setPageId(followedPage);
   }, [followedPage]);
@@ -310,6 +325,9 @@ export default function RoomWorkspace({ board, you }: RoomWorkspaceProps) {
               [
                 ['code', 'Code', codePanelId],
                 ['board', 'Whiteboard', boardPanelId],
+                ...(sandboxEnabled
+                  ? ([['sandbox', 'React', sandboxPanelId]] as const)
+                  : []),
               ] as const
             ).map(([id, label, panel]) => (
               <button
@@ -408,7 +426,7 @@ export default function RoomWorkspace({ board, you }: RoomWorkspaceProps) {
         >
           {connection ? (
             <CodeEditor
-              doc={connection.doc}
+              text={connection.doc.getText(BOARD_DOC.code(language))}
               awareness={connection.awareness}
               language={language}
               label={`Shared code, ${lang.label}`}
@@ -437,6 +455,36 @@ export default function RoomWorkspace({ board, you }: RoomWorkspaceProps) {
             />
           ) : null}
         </div>
+
+        {sandboxEnabled ? (
+          <div
+            id={sandboxPanelId}
+            role="tabpanel"
+            aria-label="React project"
+            hidden={view !== 'sandbox'}
+            className="min-h-0 flex-1"
+          >
+            {connection && me && sandboxOpened ? (
+              <RoomSandbox
+                socket={connection.socket}
+                code={board.code}
+                roomName={board.name}
+                user={{
+                  name: you.name,
+                  color: me.colour.css,
+                  colorLight: me.colour.cssFaded,
+                }}
+                revealFile={
+                  followed?.view === 'sandbox' ? followed.file : undefined
+                }
+                revealLine={
+                  followed?.view === 'sandbox' ? followed.line : undefined
+                }
+                onPresence={onProjectPresence}
+              />
+            ) : null}
+          </div>
+        ) : null}
 
         {view === 'code' ? (
           <>

@@ -15,10 +15,13 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Request as ExpressRequest } from 'express';
 import { PermissionsGuard } from '../common/guards/auth.guard';
+import { RequireExperimentalFeature } from '../decorators/guards.decorator';
 import {
   FormRateLimit,
   UserRateLimit,
 } from '../decorators/throttler.decorator';
+import { FEATURE_FLAGS } from '../feature-flags/feature-flags.constants';
+import { ExperimentalFeatureGuard } from '../feature-flags/guards/experimental-feature.guard';
 import {
   CreateSandboxDto,
   ListSandboxesDto,
@@ -30,12 +33,14 @@ import { SandboxesService } from './sandboxes.service';
 
 /**
  * The signed-in user's React sandboxes. The browser bundles and runs the
- * code; these routes only keep the project files.
+ * code; these routes only keep the project files. Only people the
+ * `reactSandbox` flag reaches get in.
  */
 @ApiTags('sandboxes')
 @ApiBearerAuth('JWT-auth')
 @Controller({ version: '1', path: 'sandboxes' })
-@UseGuards(PermissionsGuard)
+@UseGuards(PermissionsGuard, ExperimentalFeatureGuard)
+@RequireExperimentalFeature(FEATURE_FLAGS.REACT_SANDBOX)
 @UserRateLimit()
 export class SandboxesController {
   constructor(private readonly sandboxes: SandboxesService) {}

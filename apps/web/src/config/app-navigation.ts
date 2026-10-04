@@ -8,11 +8,13 @@ import {
   Trophy,
   Users,
 } from 'lucide-react';
+import { FEATURE_FLAGS, type FeatureFlagKey } from '@/features/feature-flags';
 
 /*
  * The signed-in sidebar. Items whose feature isn't built yet stay listed so
  * people can see what's coming, but render as "Soon" text rather than links
- * to pages that don't exist.
+ * to pages that don't exist. Items behind a feature flag show only to people
+ * it reaches or who can ask for it.
  */
 
 export interface AppNavItem {
@@ -20,6 +22,8 @@ export interface AppNavItem {
   href: string;
   icon: LucideIcon;
   comingSoon?: boolean;
+  /** The flag that opens this page. */
+  feature?: FeatureFlagKey;
 }
 
 export const APP_NAV: readonly AppNavItem[] = [
@@ -31,8 +35,18 @@ export const APP_NAV: readonly AppNavItem[] = [
     comingSoon: true,
   },
   { label: 'Arenas', href: '/arenas', icon: Swords, comingSoon: true },
-  { label: 'Coding board', href: '/board', icon: Users },
-  { label: 'React sandbox', href: '/sandbox', icon: Atom },
+  {
+    label: 'Coding board',
+    href: '/board',
+    icon: Users,
+    feature: FEATURE_FLAGS.codingBoard,
+  },
+  {
+    label: 'React sandbox',
+    href: '/sandbox',
+    icon: Atom,
+    feature: FEATURE_FLAGS.reactSandbox,
+  },
   {
     label: 'Leaderboard',
     href: '/leaderboard',

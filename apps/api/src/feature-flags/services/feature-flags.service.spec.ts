@@ -11,6 +11,7 @@ describe('FeatureFlagsService', () => {
     createUserAccess: jest.fn((value) => value),
     saveUserAccess: jest.fn(async (value) => value),
     findUserAccess: jest.fn(),
+    deleteUserAccess: jest.fn(),
   });
 
   const createUsersService = () => ({
@@ -39,9 +40,9 @@ describe('FeatureFlagsService', () => {
       const { repository, service } = makeService();
       repository.findFlagByKey.mockResolvedValue(null);
 
-      await expect(
-        service.hasFeatureAccess('user-1', 'MISSING'),
-      ).resolves.toBe(false);
+      await expect(service.hasFeatureAccess('user-1', 'MISSING')).resolves.toBe(
+        false,
+      );
     });
 
     it('returns false when the flag is disabled, even with a grant', async () => {
@@ -169,7 +170,12 @@ describe('FeatureFlagsService', () => {
     repository.listFlags.mockResolvedValue([
       makeFlag({ key: 'ROLLED_OUT', rolloutToAll: true }),
       makeFlag({ id: 'flag-2', key: 'NOT_ROLLED_OUT' }),
-      makeFlag({ id: 'flag-3', key: 'OFF', enabled: false, rolloutToAll: true }),
+      makeFlag({
+        id: 'flag-3',
+        key: 'OFF',
+        enabled: false,
+        rolloutToAll: true,
+      }),
     ]);
 
     await expect(service.getAvailableFeatures('user-1')).resolves.toEqual({
@@ -198,7 +204,11 @@ describe('FeatureFlagsService', () => {
       };
       repository.findUserAccess.mockResolvedValue(pending);
 
-      const saved = await service.upsertUserAccess('ARENA_BETA', 'user-1', true);
+      const saved = await service.upsertUserAccess(
+        'ARENA_BETA',
+        'user-1',
+        true,
+      );
 
       expect(saved).toMatchObject({
         enabled: true,
@@ -231,6 +241,36 @@ describe('FeatureFlagsService', () => {
       await expect(
         service.upsertUserAccess('MISSING', 'user-1', true),
       ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('removeUserAccess', () => {
+    it("drops a user's decision so the rollout decides again", async () => {
+      const { repository, service } = makeService();
+      repository.findFlagByKey.mockResolvedValue(makeFlag());
+      repository.findUserAccess.mockResolvedValue({
+        id: 'access-1',
+        status: FeatureRequestStatus.APPROVED,
+      });
+
+      await expect(
+        service.removeUserAccess('ARENA_BETA', 'user-1'),
+      ).resolves.toEqual({ key: 'ARENA_BETA', userId: 'user-1' });
+      expect(repository.deleteUserAccess).toHaveBeenCalledWith('access-1');
+    });
+
+    it('leaves a pending request for ops to approve or reject', async () => {
+      const { repository, service } = makeService();
+      repository.findFlagByKey.mockResolvedValue(makeFlag());
+      repository.findUserAccess.mockResolvedValue({
+        id: 'access-1',
+        status: FeatureRequestStatus.PENDING,
+      });
+
+      await expect(
+        service.removeUserAccess('ARENA_BETA', 'user-1'),
+      ).rejects.toThrow(NotFoundException);
+      expect(repository.deleteUserAccess).not.toHaveBeenCalled();
     });
   });
 });

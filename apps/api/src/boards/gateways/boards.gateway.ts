@@ -10,6 +10,8 @@ import {
 import type { Namespace, Socket } from 'socket.io';
 import { JwtAppService } from '../../auth/services/jwt.service';
 import { allowedOrigins } from '../../config';
+import { FEATURE_FLAGS } from '../../feature-flags/feature-flags.constants';
+import { FeatureFlagsService } from '../../feature-flags/services/feature-flags.service';
 import { RedisService } from '../../redis/redis.service';
 import { toBoardMessage } from '../boards.presenter';
 import {
@@ -17,6 +19,7 @@ import {
   BOARD_CHAT_WINDOW_MS,
   BOARD_SOCKET_EVENTS,
   BOARDS_NAMESPACE,
+  type BoardDocKind,
 } from '../constants/board-socket.constants';
 import { BOARD_CODE_PATTERN } from '../constants/board.constants';
 import { BoardChatService } from '../services/board-chat.service';
@@ -33,21 +36,26 @@ interface BoardSocketData {
   userId: string;
   /** room code → board id, for the rooms this socket has opened */
   boards: Map<string, string>;
+  /** room code → board id, for the rooms whose React project it has open */
+  sandboxes: Map<string, string>;
   /** send times of recent chat messages, for the flood guard */
   chatSentAt: number[];
 }
 
 type BoardSocket = Socket & { data: BoardSocketData };
 
-const roomOf = (boardId: string) => `board:${boardId}`;
+/** The Socket.IO room for one of a board's documents. Chat rides on `code`. */
+const roomOf = (boardId: string, kind: BoardDocKind = 'code') =>
+  kind === 'code' ? `board:${boardId}` : `board:${boardId}:${kind}`;
 
 const FALLBACK_ERROR = 'Something went wrong. Please try again.';
 
 /**
- * The realtime side of the coding board: the shared document, presence and
+ * The realtime side of the coding board: the shared documents, presence and
  * chat. Every socket authenticates with its access token on connect, and
- * every room it opens is checked against membership, the same rule as the
- * REST routes.
+ * every room it opens is checked against membership and the feature flags,
+ * the same rules as the REST routes. The flags are checked when a document
+ * is opened, so turning one off reaches people at their next reconnect.
  */
 @WebSocketGateway({
   namespace: BOARDS_NAMESPACE,
@@ -63,6 +71,7 @@ export class BoardsGateway implements OnGatewayInit, OnGatewayDisconnect {
     private readonly boards: BoardsService,
     private readonly chat: BoardChatService,
     private readonly rooms: BoardRoomsService,
+    private readonly featureFlags: FeatureFlagsService,
   ) {}
 
   afterInit(server: Namespace): void {
@@ -79,8 +88,8 @@ export class BoardsGateway implements OnGatewayInit, OnGatewayDisconnect {
         },
       );
     });
-    this.rooms.setBroadcast((boardId, event, payload, exceptSocketId) => {
-      const target = server.to(roomOf(boardId));
+    this.rooms.setBroadcast((boardId, kind, event, payload, exceptSocketId) => {
+      const target = server.to(roomOf(boardId, kind));
       (exceptSocketId ? target.except(exceptSocketId) : target).emit(
         event,
         payload,
@@ -99,12 +108,23 @@ export class BoardsGateway implements OnGatewayInit, OnGatewayDisconnect {
     if (!claims.sub || (await this.redis.isDeviceBlacklisted(claims.did))) {
       throw new Error('signed out');
     }
-    client.data = { userId: claims.sub, boards: new Map(), chatSentAt: [] };
+    client.data = {
+      userId: claims.sub,
+      boards: new Map(),
+      sandboxes: new Map(),
+      chatSentAt: [],
+    };
   }
 
   async handleDisconnect(client: BoardSocket): Promise<void> {
-    const boardIds = [...(client.data?.boards?.values() ?? [])];
-    await Promise.all(boardIds.map((id) => this.rooms.leave(id, client.id)));
+    const open = (kind: BoardDocKind, boards?: Map<string, string>) =>
+      [...(boards?.values() ?? [])].map((id) =>
+        this.rooms.leave(kind, id, client.id),
+      );
+    await Promise.all([
+      ...open('code', client.data?.boards),
+      ...open('sandbox', client.data?.sandboxes),
+    ]);
   }
 
   @SubscribeMessage(BOARD_SOCKET_EVENTS.OPEN)
@@ -114,13 +134,17 @@ export class BoardsGateway implements OnGatewayInit, OnGatewayDisconnect {
   ): Promise<BoardAck<{ state: Uint8Array; awareness: Uint8Array }>> {
     return this.answer(async () => {
       const code = readCode(body);
+      await this.requireFeatures(client, FEATURE_FLAGS.CODING_BOARD);
       const { board } = await this.boards.requireMember(
         client.data.userId,
         code,
       );
       await client.join(roomOf(board.id));
       client.data.boards.set(code, board.id);
-      return this.rooms.join(board, client.id);
+      const snapshot = await this.rooms.join('code', board, client.id);
+      // The code document is seeded on first open, so it always opens.
+      if (!snapshot) throw new Error(`board ${board.id} did not open`);
+      return snapshot;
     });
   }
 
@@ -135,7 +159,60 @@ export class BoardsGateway implements OnGatewayInit, OnGatewayDisconnect {
       if (!boardId) return {};
       client.data.boards.delete(code);
       await client.leave(roomOf(boardId));
-      await this.rooms.leave(boardId, client.id);
+      await this.rooms.leave('code', boardId, client.id);
+      return {};
+    });
+  }
+
+  /**
+   * Opens the room's React project. Before anyone starts it the answer is
+   * `ready: false`; the room hears `sandbox:ready` when someone does.
+   */
+  @SubscribeMessage(BOARD_SOCKET_EVENTS.SANDBOX_OPEN)
+  async openSandbox(
+    @ConnectedSocket() client: BoardSocket,
+    @MessageBody() body: unknown,
+  ): Promise<
+    BoardAck<
+      | { ready: false }
+      | { ready: true; state: Uint8Array; awareness: Uint8Array }
+    >
+  > {
+    return this.answer(async () => {
+      const code = readCode(body);
+      await this.requireFeatures(
+        client,
+        FEATURE_FLAGS.CODING_BOARD,
+        FEATURE_FLAGS.REACT_SANDBOX,
+      );
+      const { board } = await this.boards.requireMember(
+        client.data.userId,
+        code,
+      );
+      const room = roomOf(board.id, 'sandbox');
+      await client.join(room);
+      const snapshot = await this.rooms.join('sandbox', board, client.id);
+      if (!snapshot) {
+        await client.leave(room);
+        return { ready: false as const };
+      }
+      client.data.sandboxes.set(code, board.id);
+      return { ready: true as const, ...snapshot };
+    });
+  }
+
+  @SubscribeMessage(BOARD_SOCKET_EVENTS.SANDBOX_LEAVE)
+  async leaveSandbox(
+    @ConnectedSocket() client: BoardSocket,
+    @MessageBody() body: unknown,
+  ): Promise<BoardAck> {
+    return this.answer(async () => {
+      const code = readCode(body);
+      const boardId = client.data.sandboxes.get(code);
+      if (!boardId) return {};
+      client.data.sandboxes.delete(code);
+      await client.leave(roomOf(boardId, 'sandbox'));
+      await this.rooms.leave('sandbox', boardId, client.id);
       return {};
     });
   }
@@ -145,13 +222,7 @@ export class BoardsGateway implements OnGatewayInit, OnGatewayDisconnect {
     @ConnectedSocket() client: BoardSocket,
     @MessageBody() body: unknown,
   ): void {
-    const target = this.target(client, body);
-    if (!target) return;
-    try {
-      this.rooms.applyUpdate(target.boardId, client.id, target.bytes);
-    } catch (error: unknown) {
-      client.emit('exception', { message: messageOf(error) });
-    }
+    this.relayUpdate('code', client, body);
   }
 
   @SubscribeMessage(BOARD_SOCKET_EVENTS.AWARENESS)
@@ -159,10 +230,23 @@ export class BoardsGateway implements OnGatewayInit, OnGatewayDisconnect {
     @ConnectedSocket() client: BoardSocket,
     @MessageBody() body: unknown,
   ): void {
-    const target = this.target(client, body);
-    if (target) {
-      this.rooms.applyAwareness(target.boardId, client.id, target.bytes);
-    }
+    this.relayAwareness('code', client, body);
+  }
+
+  @SubscribeMessage(BOARD_SOCKET_EVENTS.SANDBOX_UPDATE)
+  sandboxUpdate(
+    @ConnectedSocket() client: BoardSocket,
+    @MessageBody() body: unknown,
+  ): void {
+    this.relayUpdate('sandbox', client, body);
+  }
+
+  @SubscribeMessage(BOARD_SOCKET_EVENTS.SANDBOX_AWARENESS)
+  sandboxAwareness(
+    @ConnectedSocket() client: BoardSocket,
+    @MessageBody() body: unknown,
+  ): void {
+    this.relayAwareness('sandbox', client, body);
   }
 
   @SubscribeMessage(BOARD_SOCKET_EVENTS.CHAT_SEND)
@@ -191,13 +275,52 @@ export class BoardsGateway implements OnGatewayInit, OnGatewayDisconnect {
     });
   }
 
-  /** The board and binary payload of an update, if the socket has opened that board. */
-  private target(client: BoardSocket, body: unknown) {
+  private relayUpdate(
+    kind: BoardDocKind,
+    client: BoardSocket,
+    body: unknown,
+  ): void {
+    const target = this.target(kind, client, body);
+    if (!target) return;
+    try {
+      this.rooms.applyUpdate(kind, target.boardId, client.id, target.bytes);
+    } catch (error: unknown) {
+      client.emit('exception', { message: messageOf(error) });
+    }
+  }
+
+  private relayAwareness(
+    kind: BoardDocKind,
+    client: BoardSocket,
+    body: unknown,
+  ): void {
+    const target = this.target(kind, client, body);
+    if (target) {
+      this.rooms.applyAwareness(kind, target.boardId, client.id, target.bytes);
+    }
+  }
+
+  /** The board and binary payload of an update, if the socket has opened that document. */
+  private target(kind: BoardDocKind, client: BoardSocket, body: unknown) {
     const code = normalizeBoardCode((body as { code?: unknown })?.code);
-    const boardId =
-      typeof code === 'string' ? client.data?.boards?.get(code) : undefined;
+    const opened =
+      kind === 'code' ? client.data?.boards : client.data?.sandboxes;
+    const boardId = typeof code === 'string' ? opened?.get(code) : undefined;
     const bytes = toBytes((body as { update?: unknown })?.update);
     return boardId && bytes ? { boardId, bytes } : null;
+  }
+
+  /** Throws the flag's refusal, which the ack shows, unless every flag reaches this user. */
+  private async requireFeatures(
+    client: BoardSocket,
+    ...featureKeys: string[]
+  ): Promise<void> {
+    for (const featureKey of featureKeys) {
+      await this.featureFlags.assertFeatureAccess(
+        client.data.userId,
+        featureKey,
+      );
+    }
   }
 
   private allowChat(data: BoardSocketData): boolean {

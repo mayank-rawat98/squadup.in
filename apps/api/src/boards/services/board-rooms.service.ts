@@ -23,6 +23,7 @@ import {
   BOARD_SAVE_MAX_WAIT_MS,
   BOARD_SOCKET_EVENTS,
   BOARD_STARTER_CODE,
+  type BoardDocKind,
   boardDocCodeKey,
 } from '../constants/board-socket.constants';
 import {
@@ -31,14 +32,30 @@ import {
 } from '../constants/board.constants';
 import type { Board } from '../entities';
 import { BoardDocumentsRepository } from '../repositories/board-documents.repository';
+import { BoardSandboxDocumentsRepository } from '../repositories/board-sandbox-documents.repository';
 
-/** Sends an event to everyone in a board, optionally leaving one socket out. */
+/**
+ * Sends an event to everyone who has one of a board's documents open,
+ * optionally leaving one socket out.
+ */
 export type BoardBroadcast = (
   boardId: string,
+  kind: BoardDocKind,
   event: string,
   payload: unknown,
   exceptSocketId?: string,
 ) => void;
+
+/** How one kind of document is stored, seeded and synced. */
+interface DocSpec {
+  load(boardId: string): Promise<Uint8Array | null>;
+  save(boardId: string, state: Uint8Array): Promise<void>;
+  /** Fills a room that has never been saved; without it, such a room doesn't open. */
+  seed?: (doc: Y.Doc, board: Board) => void;
+  updateEvent: string;
+  awarenessEvent: string;
+  tooLargeMessage: string;
+}
 
 export interface RoomSnapshot {
   state: Uint8Array;
@@ -47,6 +64,7 @@ export interface RoomSnapshot {
 
 interface LiveRoom {
   boardId: string;
+  kind: BoardDocKind;
   doc: Y.Doc;
   awareness: Awareness;
   sockets: Set<string>;
@@ -61,7 +79,8 @@ interface LiveRoom {
 
 /**
  * The live side of every open board: one Yjs document and one awareness per
- * room, held in memory while anyone is in it and written to Postgres as it
+ * room and document kind (the code and whiteboard, and the React project),
+ * held in memory while anyone has it open and written to Postgres as it
  * changes. Updates from one socket are applied here and relayed to the rest.
  *
  * Rooms live in this process, so the API must run as a single instance (as
@@ -71,19 +90,53 @@ interface LiveRoom {
 export class BoardRoomsService implements OnModuleDestroy {
   private readonly logger = new Logger(BoardRoomsService.name);
   private readonly rooms = new Map<string, LiveRoom>();
-  private readonly loading = new Map<string, Promise<LiveRoom>>();
+  private readonly loading = new Map<string, Promise<LiveRoom | null>>();
+  private readonly specs: Record<BoardDocKind, DocSpec>;
   private broadcast: BoardBroadcast = () => undefined;
 
-  constructor(private readonly documents: BoardDocumentsRepository) {}
+  constructor(
+    documents: BoardDocumentsRepository,
+    sandboxDocuments: BoardSandboxDocumentsRepository,
+  ) {
+    this.specs = {
+      code: {
+        load: (boardId) => documents.load(boardId),
+        save: (boardId, state) => documents.save(boardId, state),
+        seed: (doc, board) => seed(doc, board.language),
+        updateEvent: BOARD_SOCKET_EVENTS.UPDATE,
+        awarenessEvent: BOARD_SOCKET_EVENTS.AWARENESS,
+        tooLargeMessage:
+          'This board is too large to save more changes. Clear the whiteboard or remove unused code.',
+      },
+      // Started on purpose (BoardSandboxService), from files someone chose.
+      sandbox: {
+        load: (boardId) => sandboxDocuments.load(boardId),
+        save: (boardId, state) => sandboxDocuments.save(boardId, state),
+        updateEvent: BOARD_SOCKET_EVENTS.SANDBOX_UPDATE,
+        awarenessEvent: BOARD_SOCKET_EVENTS.SANDBOX_AWARENESS,
+        tooLargeMessage:
+          'This project is too large to save more changes. Delete unused files or code.',
+      },
+    };
+  }
 
   /** The gateway hands over its emitter once the socket server exists. */
   setBroadcast(broadcast: BoardBroadcast): void {
     this.broadcast = broadcast;
   }
 
-  /** Adds a socket to the room and returns what it needs to catch up. */
-  async join(board: Board, socketId: string): Promise<RoomSnapshot> {
-    const room = await this.room(board);
+  /**
+   * Adds a socket to the room and returns what it needs to catch up, or null
+   * when the document has never been started and has no seed (a room's
+   * React project before anyone starts it).
+   */
+  async join(
+    kind: BoardDocKind,
+    board: Board,
+    socketId: string,
+  ): Promise<RoomSnapshot | null> {
+    const room = await this.room(kind, board);
+    if (!room) return null;
     clearTimeout(room.unloadTimer);
     room.unloadTimer = undefined;
     room.sockets.add(socketId);
@@ -96,30 +149,42 @@ export class BoardRoomsService implements OnModuleDestroy {
   }
 
   /** Applies a document update from a socket that has joined the room. */
-  applyUpdate(boardId: string, socketId: string, update: Uint8Array): void {
-    const room = this.joined(boardId, socketId);
+  applyUpdate(
+    kind: BoardDocKind,
+    boardId: string,
+    socketId: string,
+    update: Uint8Array,
+  ): void {
+    const room = this.joined(kind, boardId, socketId);
     if (!room) return;
     if (
       update.byteLength > BOARD_MAX_UPDATE_BYTES ||
       room.bytes + update.byteLength > BOARD_MAX_DOC_BYTES
     ) {
-      throw new PayloadTooLargeException(
-        'This board is too large to save more changes. Clear the whiteboard or remove unused code.',
-      );
+      throw new PayloadTooLargeException(this.specs[kind].tooLargeMessage);
     }
     room.bytes += update.byteLength;
     Y.applyUpdate(room.doc, update, socketId);
   }
 
-  applyAwareness(boardId: string, socketId: string, update: Uint8Array): void {
-    const room = this.joined(boardId, socketId);
+  applyAwareness(
+    kind: BoardDocKind,
+    boardId: string,
+    socketId: string,
+    update: Uint8Array,
+  ): void {
+    const room = this.joined(kind, boardId, socketId);
     if (!room || update.byteLength > BOARD_MAX_UPDATE_BYTES) return;
     applyAwarenessUpdate(room.awareness, update, socketId);
   }
 
   /** Takes a socket out: its cursors vanish for everyone, and an empty room saves and unloads. */
-  async leave(boardId: string, socketId: string): Promise<void> {
-    const room = this.rooms.get(boardId);
+  async leave(
+    kind: BoardDocKind,
+    boardId: string,
+    socketId: string,
+  ): Promise<void> {
+    const room = this.rooms.get(keyOf(kind, boardId));
     if (!room || !room.sockets.delete(socketId)) return;
 
     const clients = room.clients.get(socketId);
@@ -139,18 +204,32 @@ export class BoardRoomsService implements OnModuleDestroy {
 
   /**
    * Closes an expired room without saving it: tells everyone in it, then
-   * drops it from memory so nothing writes it back after it's deleted. Waits
-   * for a load in progress, so a room can't reappear behind the sweep.
+   * drops both its documents from memory so nothing writes them back after
+   * they're deleted. Waits for loads in progress, so a room can't reappear
+   * behind the sweep.
    */
   async evict(boardId: string): Promise<void> {
-    await this.loading.get(boardId)?.catch(() => undefined);
-    const room = this.rooms.get(boardId);
-    if (!room) return;
-    this.rooms.delete(boardId);
-    this.dispose(room);
-    this.broadcast(boardId, BOARD_SOCKET_EVENTS.EXPIRED, {
-      message: `This room has expired. Rooms are deleted ${BOARD_RETENTION_DAYS} days after they're made.`,
-    });
+    let wasOpen = false;
+    for (const kind of DOC_KINDS) {
+      const key = keyOf(kind, boardId);
+      await this.loading.get(key)?.catch(() => undefined);
+      const room = this.rooms.get(key);
+      if (!room) continue;
+      this.rooms.delete(key);
+      this.dispose(room);
+      wasOpen = true;
+    }
+    // Everyone with the project open also has the code document open.
+    if (wasOpen) {
+      this.broadcast(boardId, 'code', BOARD_SOCKET_EVENTS.EXPIRED, {
+        message: `This room has expired. Rooms are deleted ${BOARD_RETENTION_DAYS} days after they're made.`,
+      });
+    }
+  }
+
+  /** Tells everyone in the room something that isn't a document change. */
+  notify(boardId: string, event: string, payload: unknown): void {
+    this.broadcast(boardId, 'code', event, payload);
   }
 
   async onModuleDestroy(): Promise<void> {
@@ -158,31 +237,42 @@ export class BoardRoomsService implements OnModuleDestroy {
     for (const room of this.rooms.values()) this.dispose(room);
   }
 
-  private joined(boardId: string, socketId: string): LiveRoom | undefined {
-    const room = this.rooms.get(boardId);
+  private joined(
+    kind: BoardDocKind,
+    boardId: string,
+    socketId: string,
+  ): LiveRoom | undefined {
+    const room = this.rooms.get(keyOf(kind, boardId));
     return room?.sockets.has(socketId) ? room : undefined;
   }
 
   /** The live room, loading it once even when several people open it at the same moment. */
-  private room(board: Board): Promise<LiveRoom> {
-    const live = this.rooms.get(board.id);
+  private room(kind: BoardDocKind, board: Board): Promise<LiveRoom | null> {
+    const key = keyOf(kind, board.id);
+    const live = this.rooms.get(key);
     if (live) return Promise.resolve(live);
 
-    let pending = this.loading.get(board.id);
+    let pending = this.loading.get(key);
     if (!pending) {
-      pending = this.load(board).finally(() => this.loading.delete(board.id));
-      this.loading.set(board.id, pending);
+      pending = this.load(kind, board).finally(() => this.loading.delete(key));
+      this.loading.set(key, pending);
     }
     return pending;
   }
 
-  private async load(board: Board): Promise<LiveRoom> {
+  private async load(
+    kind: BoardDocKind,
+    board: Board,
+  ): Promise<LiveRoom | null> {
+    const spec = this.specs[kind];
+    const stored = await spec.load(board.id);
+    if (!stored && !spec.seed) return null;
+
     const doc = new Y.Doc();
-    const stored = await this.documents.load(board.id);
     if (stored) {
       Y.applyUpdate(doc, stored);
     } else {
-      seed(doc, board.language);
+      spec.seed?.(doc, board);
     }
 
     const awareness = new Awareness(doc);
@@ -191,6 +281,7 @@ export class BoardRoomsService implements OnModuleDestroy {
 
     const room: LiveRoom = {
       boardId: board.id,
+      kind,
       doc,
       awareness,
       sockets: new Set(),
@@ -202,7 +293,8 @@ export class BoardRoomsService implements OnModuleDestroy {
     doc.on('update', (update: Uint8Array, origin: unknown) => {
       this.broadcast(
         room.boardId,
-        BOARD_SOCKET_EVENTS.UPDATE,
+        kind,
+        spec.updateEvent,
         update,
         typeof origin === 'string' ? origin : undefined,
       );
@@ -229,14 +321,15 @@ export class BoardRoomsService implements OnModuleDestroy {
         ];
         this.broadcast(
           room.boardId,
-          BOARD_SOCKET_EVENTS.AWARENESS,
+          kind,
+          spec.awarenessEvent,
           encodeAwarenessUpdate(awareness, changed),
           socketId,
         );
       },
     );
 
-    this.rooms.set(board.id, room);
+    this.rooms.set(keyOf(kind, board.id), room);
     if (!stored) this.scheduleSave(room);
     return room;
   }
@@ -261,11 +354,11 @@ export class BoardRoomsService implements OnModuleDestroy {
     const state = Y.encodeStateAsUpdate(room.doc);
     room.dirtySince = null;
     try {
-      await this.documents.save(room.boardId, state);
+      await this.specs[room.kind].save(room.boardId, state);
       room.bytes = state.byteLength;
     } catch (error: unknown) {
       this.logger.error(
-        `Saving board ${room.boardId} failed: ${(error as Error).message}`,
+        `Saving board ${room.boardId} (${room.kind}) failed: ${(error as Error).message}`,
       );
       // Keep the edits marked unsaved so the next change, or leaving, retries.
       room.dirtySince ??= Date.now();
@@ -275,7 +368,7 @@ export class BoardRoomsService implements OnModuleDestroy {
   private unload(room: LiveRoom): void {
     if (room.sockets.size > 0 || room.dirtySince !== null) return;
     this.dispose(room);
-    this.rooms.delete(room.boardId);
+    this.rooms.delete(keyOf(room.kind, room.boardId));
   }
 
   private dispose(room: LiveRoom): void {
@@ -285,6 +378,10 @@ export class BoardRoomsService implements OnModuleDestroy {
     room.doc.destroy();
   }
 }
+
+const DOC_KINDS: readonly BoardDocKind[] = ['code', 'sandbox'];
+
+const keyOf = (kind: BoardDocKind, boardId: string) => `${kind}:${boardId}`;
 
 /**
  * A new room opens in its chosen language with a starter file for every

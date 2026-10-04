@@ -440,7 +440,14 @@ voice transport (WebRTC mesh for small rooms, or an SFU such as LiveKit).
   `/sandbox`, projects saved to the account from a Vite-style scaffold, a
   live preview that hot-reloads on Sandpack's bundler, files, npm packages,
   a console, the preview in its own tab, and download as a zip. Still to
-  come: sharing and forking a sandbox, and opening one inside a board room.
+  come: sharing and forking a personal sandbox.
+- ✅ React project in a board room ([ADR-0009](docs/adr/0009-room-react-project-second-yjs-doc.md)):
+  a React tab where the room builds one project together, started from the
+  template or one of your sandboxes, with live cursors, shared packages,
+  each person's own live preview, Follow, save a copy and download.
+- ✅ Feature flags: the board (`codingBoard`) and the sandbox
+  (`reactSandbox`) are gated, start rolled out to nobody, and people they
+  don't reach can request access.
 - ⬜ Code execution by reusing the Milestone 3 runner.
 
 ---
@@ -472,7 +479,10 @@ screen alongside the feature it manages; this milestone covers what's left.
 - ⬜ Users: search, view, suspend or restore, audit log.
 - ✅ Email templates: map each email type to a Mailtr `templateId`, switch
   it on or off, and send a test to yourself (`admin-ops/email-templates`).
-- ⬜ Feature flags, blogs, changelog, and contact/grievance inbox (all
-  existing API modules).
+- ✅ Feature flags: set a flag to off, selected people or everyone; grant,
+  deny or remove people; approve or reject access requests
+  (`admin-ops/feature-flags`, `admin-ops/feature-requests`).
+- ⬜ Blogs, changelog, and contact/grievance inbox (all existing API
+  modules).
 - ⬜ Content: problems (Milestone 3), arenas and proctoring review
   (Milestone 4), store orders (Milestone 6).

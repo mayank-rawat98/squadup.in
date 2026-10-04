@@ -11,6 +11,7 @@ import {
   buttonVariants,
 } from '@squadup.in/ui';
 import { useCurrentUser } from '@/features/auth';
+import { FEATURE_FLAGS, useFeature } from '@/features/feature-flags';
 import { getErrorMessage, isApiError } from '@/lib/api';
 import { getBoard, joinBoard } from '../api/boards.api';
 import { BOARD_PATH, BOARD_QUERY_KEYS } from '../constants/board.constant';
@@ -24,6 +25,7 @@ export interface BoardRoomProps {
 export default function BoardRoom({ code }: BoardRoomProps) {
   const queryClient = useQueryClient();
   const currentUser = useCurrentUser();
+  const sandbox = useFeature(FEATURE_FLAGS.reactSandbox);
   const room = useQuery({
     queryKey: BOARD_QUERY_KEYS.detail(code),
     queryFn: ({ signal }) => getBoard(code, signal),
@@ -113,6 +115,7 @@ export default function BoardRoom({ code }: BoardRoomProps) {
   return (
     <RoomWorkspace
       board={room.data}
+      sandboxEnabled={sandbox.status === 'on'}
       you={{
         id: you.id,
         name:

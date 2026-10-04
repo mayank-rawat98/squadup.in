@@ -1,8 +1,8 @@
 'use client';
 
-import { useId, useMemo, useState } from 'react';
+import { useId, useState } from 'react';
 import Link from 'next/link';
-import { SandpackCodeEditor, useSandpack } from '@codesandbox/sandpack-react';
+import { SandpackCodeEditor } from '@codesandbox/sandpack-react';
 import {
   ArrowLeft,
   Download,
@@ -19,9 +19,9 @@ import {
 import { useAutosave } from '../hooks/use-autosave';
 import { useBundlerPreview } from '../hooks/use-bundler-preview';
 import { usePublishFiles } from '../hooks/use-preview-channel';
+import { useSandpackProject } from '../hooks/use-sandpack-project';
 import type { SandboxDetail } from '../types/sandbox.types';
 import { downloadProject } from '../utils/project-zip';
-import { fromSandpackFiles } from '../utils/sandpack-files';
 import FileExplorer from './FileExplorer';
 import LivePreview from './LivePreview';
 import PackagesPanel from './PackagesPanel';
@@ -49,11 +49,8 @@ export interface WorkspaceShellProps {
  * so the preview keeps running while you edit.
  */
 export default function WorkspaceShell({ sandbox }: WorkspaceShellProps) {
-  const { sandpack } = useSandpack();
-  const files = useMemo(
-    () => fromSandpackFiles(sandpack.files),
-    [sandpack.files],
-  );
+  const project = useSandpackProject();
+  const { files } = project;
   const [name, setName] = useState(sandbox.name);
   const [view, setView] = useState<View>('code');
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -169,7 +166,7 @@ export default function WorkspaceShell({ sandbox }: WorkspaceShellProps) {
           )}
         >
           <FileExplorer
-            files={files}
+            project={project}
             open={filesOpen}
             onToggle={() => setFilesOpen((value) => !value)}
             className={filesOpen ? 'flex-1' : 'shrink-0'}
@@ -183,7 +180,12 @@ export default function WorkspaceShell({ sandbox }: WorkspaceShellProps) {
               filesOpen ? 'max-h-[45%] shrink-0' : 'flex-1',
             )}
           >
-            <PackagesPanel packageJson={files[SANDBOX_PACKAGE_JSON] ?? ''} />
+            <PackagesPanel
+              packageJson={files[SANDBOX_PACKAGE_JSON] ?? ''}
+              onChange={(next) =>
+                project.updateFile(SANDBOX_PACKAGE_JSON, next)
+              }
+            />
           </SidebarSection>
         </aside>
 

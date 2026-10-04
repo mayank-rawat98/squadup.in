@@ -47,5 +47,11 @@ export const SANDBOX_QUERY_KEYS = {
   detail: (id: string) => [...SANDBOX_QUERY_KEYS.all, 'detail', id] as const,
 };
 
+/**
+ * A board room's shared project, as the API stores it: `files` (Y.Map) maps
+ * each path to its Y.Text. Mirrors the API's BOARD_SANDBOX_DOC_FILES.
+ */
+export const SHARED_PROJECT_FILES = 'files';
+
 /** The BroadcastChannel the editor tab and its preview tabs talk over. */
 export const sandboxChannelName = (id: string) => `squadup:sandbox:${id}`;

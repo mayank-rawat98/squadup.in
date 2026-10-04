@@ -1,5 +1,6 @@
 import { ForbiddenException } from '@nestjs/common';
 import type { JwtAppService } from '../../auth/services/jwt.service';
+import type { FeatureFlagsService } from '../../feature-flags/services/feature-flags.service';
 import type { RedisService } from '../../redis/redis.service';
 import { BOARD_SOCKET_EVENTS } from '../constants/board-socket.constants';
 import type { BoardChatService } from '../services/board-chat.service';
@@ -29,6 +30,7 @@ describe('BoardsGateway', () => {
   let redis: { isDeviceBlacklisted: jest.Mock };
   let boards: { requireMember: jest.Mock };
   let chat: { post: jest.Mock };
+  let featureFlags: { assertFeatureAccess: jest.Mock };
   let rooms: {
     join: jest.Mock;
     leave: jest.Mock;
@@ -42,6 +44,9 @@ describe('BoardsGateway', () => {
       verifyAccessToken: jest.fn().mockResolvedValue({ sub: 'u1', did: 'd1' }),
     };
     redis = { isDeviceBlacklisted: jest.fn().mockResolvedValue(false) };
+    featureFlags = {
+      assertFeatureAccess: jest.fn().mockResolvedValue(undefined),
+    };
     boards = {
       requireMember: jest.fn().mockResolvedValue({ board: { id: 'b1' } }),
     };
@@ -68,6 +73,7 @@ describe('BoardsGateway', () => {
       boards as unknown as BoardsService,
       chat as unknown as BoardChatService,
       rooms as unknown as BoardRoomsService,
+      featureFlags as unknown as FeatureFlagsService,
     );
   });
 
@@ -125,8 +131,13 @@ describe('BoardsGateway', () => {
 
       const ack = await gateway.open(client as never, { code: 'k7q2m' });
 
+      expect(featureFlags.assertFeatureAccess).toHaveBeenCalledWith(
+        'u1',
+        'codingBoard',
+      );
       expect(boards.requireMember).toHaveBeenCalledWith('u1', 'K7Q2M');
       expect(client.join).toHaveBeenCalledWith('board:b1');
+      expect(rooms.join).toHaveBeenCalledWith('code', { id: 'b1' }, 's1');
       expect(ack).toEqual({
         ok: true,
         state: new Uint8Array([1]),
@@ -143,6 +154,24 @@ describe('BoardsGateway', () => {
       const ack = await gateway.open(client as never, { code: 'K7Q2M' });
 
       expect(ack).toEqual({ ok: false, message: "You're not in this room." });
+      expect(client.join).not.toHaveBeenCalled();
+    });
+
+    it('refuses someone the coding board flag does not reach', async () => {
+      featureFlags.assertFeatureAccess.mockRejectedValue(
+        new ForbiddenException(
+          'This experimental feature is not enabled for your account.',
+        ),
+      );
+      const client = await connected();
+
+      const ack = await gateway.open(client as never, { code: 'K7Q2M' });
+
+      expect(ack).toEqual({
+        ok: false,
+        message: 'This experimental feature is not enabled for your account.',
+      });
+      expect(boards.requireMember).not.toHaveBeenCalled();
       expect(client.join).not.toHaveBeenCalled();
     });
 
@@ -178,9 +207,93 @@ describe('BoardsGateway', () => {
       });
 
       expect(rooms.applyUpdate).toHaveBeenCalledWith(
+        'code',
         'b1',
         's1',
         new Uint8Array([7, 8]),
+      );
+    });
+  });
+
+  describe('the React project', () => {
+    it('opens it for someone both flags reach, in its own socket room', async () => {
+      const client = await connected();
+
+      const ack = await gateway.openSandbox(client as never, { code: 'K7Q2M' });
+
+      expect(featureFlags.assertFeatureAccess.mock.calls).toEqual([
+        ['u1', 'codingBoard'],
+        ['u1', 'reactSandbox'],
+      ]);
+      expect(client.join).toHaveBeenCalledWith('board:b1:sandbox');
+      expect(rooms.join).toHaveBeenCalledWith('sandbox', { id: 'b1' }, 's1');
+      expect(ack).toEqual({
+        ok: true,
+        ready: true,
+        state: new Uint8Array([1]),
+        awareness: new Uint8Array([2]),
+      });
+    });
+
+    it('says it is not ready, and keeps the socket out, before anyone starts it', async () => {
+      rooms.join.mockResolvedValue(null);
+      const client = await connected();
+
+      const ack = await gateway.openSandbox(client as never, { code: 'K7Q2M' });
+
+      expect(ack).toEqual({ ok: true, ready: false });
+      expect(client.leave).toHaveBeenCalledWith('board:b1:sandbox');
+      gateway.sandboxUpdate(client as never, {
+        code: 'K7Q2M',
+        update: Buffer.from([1]),
+      });
+      expect(rooms.applyUpdate).not.toHaveBeenCalled();
+    });
+
+    it('refuses someone the React sandbox flag does not reach', async () => {
+      featureFlags.assertFeatureAccess.mockImplementation(
+        async (_user: string, key: string) => {
+          if (key === 'reactSandbox') {
+            throw new ForbiddenException(
+              'This experimental feature is not enabled for your account.',
+            );
+          }
+        },
+      );
+      const client = await connected();
+
+      const ack = await gateway.openSandbox(client as never, { code: 'K7Q2M' });
+
+      expect(ack.ok).toBe(false);
+      expect(rooms.join).not.toHaveBeenCalled();
+    });
+
+    it('does not let an opened code document carry project edits', async () => {
+      const client = await connected();
+      await gateway.open(client as never, { code: 'K7Q2M' });
+
+      gateway.sandboxUpdate(client as never, {
+        code: 'K7Q2M',
+        update: Buffer.from([1]),
+      });
+
+      expect(rooms.applyUpdate).not.toHaveBeenCalled();
+    });
+
+    it('passes project edits to the project once it is open', async () => {
+      const client = await connected();
+      await gateway.openSandbox(client as never, { code: 'K7Q2M' });
+
+      gateway.sandboxUpdate(client as never, {
+        code: 'K7Q2M',
+        update: Buffer.from([7]),
+      });
+
+      expect(rooms.applyUpdate).toHaveBeenCalledWith(
+        'sandbox',
+        'b1',
+        's1',
+        new Uint8Array([7]),
       );
     });
   });
@@ -240,12 +353,14 @@ describe('BoardsGateway', () => {
     });
   });
 
-  it('takes the socket out of every room it opened when it disconnects', async () => {
+  it('takes the socket out of every document it opened when it disconnects', async () => {
     const client = await connected();
     await gateway.open(client as never, { code: 'K7Q2M' });
+    await gateway.openSandbox(client as never, { code: 'K7Q2M' });
 
     await gateway.handleDisconnect(client as never);
 
-    expect(rooms.leave).toHaveBeenCalledWith('b1', 's1');
+    expect(rooms.leave).toHaveBeenCalledWith('code', 'b1', 's1');
+    expect(rooms.leave).toHaveBeenCalledWith('sandbox', 'b1', 's1');
   });
 });

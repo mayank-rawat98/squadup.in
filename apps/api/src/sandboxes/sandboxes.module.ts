@@ -10,5 +10,6 @@ import { SandboxesService } from './sandboxes.service';
   imports: [TypeOrmModule.forFeature([Sandbox])],
   controllers: [SandboxesController],
   providers: [SandboxesService, SandboxesRepository],
+  exports: [SandboxesService],
 })
 export class SandboxesModule {}

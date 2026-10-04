@@ -73,6 +73,11 @@ export const BOARD_SOCKET_EVENTS = {
   chatSend: 'chat:send',
   chatMessage: 'chat:message',
   expired: 'board:expired',
+  sandboxOpen: 'sandbox:open',
+  sandboxLeave: 'sandbox:leave',
+  sandboxUpdate: 'sandbox:update',
+  sandboxAwareness: 'sandbox:awareness',
+  sandboxReady: 'sandbox:ready',
 } as const;
 
 /** Mirrors the API's BOARD_RETENTION_DAYS: rooms are deleted this long after they're made. */
