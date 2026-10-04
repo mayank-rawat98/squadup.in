@@ -24,12 +24,12 @@ export class ExperimentalFeatureGuard implements CanActivate {
     ]);
     if (isPublic) return true;
 
-    const featureKey = this.reflector.getAllAndOverride<string>(
+    const featureKeys = this.reflector.getAllAndMerge<string[]>(
       EXPERIMENTAL_FEATURE_KEY,
       [context.getHandler(), context.getClass()],
     );
 
-    if (!featureKey) {
+    if (featureKeys.length === 0) {
       return true;
     }
 
@@ -38,10 +38,12 @@ export class ExperimentalFeatureGuard implements CanActivate {
       throw new UnauthorizedException('Unauthorized');
     }
 
-    await this.featureFlagsService.assertFeatureAccess(
-      request.auth.userId,
-      featureKey,
-    );
+    for (const featureKey of new Set(featureKeys)) {
+      await this.featureFlagsService.assertFeatureAccess(
+        request.auth.userId,
+        featureKey,
+      );
+    }
 
     return true;
   }

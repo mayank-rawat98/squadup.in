@@ -128,6 +128,29 @@ export class FeatureFlagsService {
     return this.featureFlagsRepository.saveUserAccess(access);
   }
 
+  /**
+   * Drops one user's decision, so the flag's rollout decides for them again.
+   * A pending request is not a decision; ops approves or rejects it instead.
+   */
+  async removeUserAccess(key: string, userId: string) {
+    const featureFlag = await this.requireFlag(key);
+    const existing = await this.featureFlagsRepository.findUserAccess(
+      featureFlag.id,
+      userId,
+    );
+    if (!existing || existing.status === FeatureRequestStatus.PENDING) {
+      throw new NotFoundException(
+        `This person has no access decision on "${key}" to remove.`,
+      );
+    }
+    await this.featureFlagsRepository.deleteUserAccess(existing.id);
+    return { key, userId };
+  }
+
+  async getAdminFeatureFlag(key: string) {
+    return this.requireFlag(key);
+  }
+
   private async requireFlag(key: string) {
     const featureFlag = await this.featureFlagsRepository.findFlagByKey(key);
     if (!featureFlag) {
