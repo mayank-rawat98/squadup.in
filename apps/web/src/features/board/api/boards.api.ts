@@ -4,6 +4,7 @@ import type {
   BoardMessage,
   BoardSummary,
   CreateBoardInput,
+  StartRoomSandboxInput,
 } from '../types/board.types';
 
 /* The boards endpoints (apps/api boards.controller). */
@@ -49,4 +50,15 @@ export async function getBoardMessages(
     `/boards/${encodeURIComponent(code)}/messages?limit=50`,
     { signal },
   )) as unknown as Paginated<BoardMessage>;
+}
+
+/** Starts the room's shared React project; everyone in the room hears `sandbox:ready`. */
+export function startRoomSandbox(
+  code: string,
+  input: StartRoomSandboxInput,
+): Promise<null> {
+  return apiClient.request<null>(
+    `/boards/${encodeURIComponent(code)}/sandbox`,
+    { method: 'POST', body: input },
+  );
 }

@@ -7,37 +7,44 @@ import { cpp } from '@codemirror/lang-cpp';
 import { java } from '@codemirror/lang-java';
 import { javascript } from '@codemirror/lang-javascript';
 import { python } from '@codemirror/lang-python';
-import type { Extension } from '@codemirror/state';
+import { EditorState, type Extension } from '@codemirror/state';
 import { EditorView, keymap } from '@codemirror/view';
 import { yCollab, yUndoManagerKeymap } from 'y-codemirror.next';
 import type { Awareness } from 'y-protocols/awareness';
 import * as Y from 'yjs';
-import { BOARD_DOC } from '../../constants/board.constant';
-import type { BoardLanguageId } from '../../types/board.types';
+import type { EditorLanguage } from '../../utils/editor-language';
 import { editorHighlighting, editorTheme } from './editor-theme';
 
-const LANGUAGE_SUPPORT: Record<BoardLanguageId, () => Extension> = {
+const LANGUAGE_SUPPORT: Record<EditorLanguage, () => Extension> = {
   cpp,
   c: cpp,
   java,
   python,
   javascript,
+  typescript: () => javascript({ typescript: true }),
+  tsx: () => javascript({ typescript: true, jsx: true }),
+  jsx: () => javascript({ jsx: true }),
+  plain: () => [],
 };
 
 export interface CodeEditorProps {
-  doc: Y.Doc;
+  /** The shared file this editor edits. */
+  text: Y.Text;
   awareness: Awareness;
-  language: BoardLanguageId;
+  language: EditorLanguage;
   /** Read out to screen readers, e.g. "Shared code, C++". */
   label: string;
   /** Scrolls this 1-based line into view when it changes (following someone). */
   revealLine?: number;
   /** Reports the line your caret is on, for your presence. */
   onCaretLine?: (line: number) => void;
+  /** Shows the file without letting anyone type in it, e.g. package.json. */
+  readOnly?: boolean;
 }
 
 /*
- * CodeMirror bound to the room's shared Y.Text for the current language.
+ * CodeMirror bound to one shared Y.Text: a language's file on the board, or
+ * a file of the room's React project.
  * y-codemirror merges everyone's edits and draws their carets from
  * awareness; undo only undoes your own edits.
  *
@@ -45,12 +52,13 @@ export interface CodeEditorProps {
  * out, which CodeMirror provides, so the editor never traps the keyboard.
  */
 export default function CodeEditor({
-  doc,
+  text,
   awareness,
   language,
   label,
   revealLine,
   onCaretLine,
+  readOnly = false,
 }: CodeEditorProps) {
   const host = useRef<HTMLDivElement>(null);
   const view = useRef<EditorView | null>(null);
@@ -59,7 +67,6 @@ export default function CodeEditor({
 
   useEffect(() => {
     if (!host.current) return;
-    const text = doc.getText(BOARD_DOC.code(language));
     const undoManager = new Y.UndoManager(text);
     let lastLine = 0;
 
@@ -73,6 +80,7 @@ export default function CodeEditor({
         editorTheme,
         editorHighlighting,
         yCollab(text, awareness, { undoManager }),
+        EditorState.readOnly.of(readOnly),
         EditorView.contentAttributes.of({ 'aria-label': label }),
         EditorView.updateListener.of((update) => {
           if (!update.selectionSet && !update.docChanged) return;
@@ -93,7 +101,7 @@ export default function CodeEditor({
       editor.destroy();
       undoManager.destroy();
     };
-  }, [doc, awareness, language, label]);
+  }, [text, awareness, language, label, readOnly]);
 
   useEffect(() => {
     const editor = view.current;

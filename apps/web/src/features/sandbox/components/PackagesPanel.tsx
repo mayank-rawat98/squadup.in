@@ -1,13 +1,9 @@
 'use client';
 
 import { type FormEvent, useId, useState } from 'react';
-import { useSandpack } from '@codesandbox/sandpack-react';
 import { Plus, X } from 'lucide-react';
 import { Button, Input } from '@squadup.in/ui';
-import {
-  SANDBOX_PACKAGE_JSON,
-  SANDBOX_REQUIRED_PACKAGES,
-} from '../constants/sandbox.constant';
+import { SANDBOX_REQUIRED_PACKAGES } from '../constants/sandbox.constant';
 import {
   addDependency,
   parsePackageSpec,
@@ -17,6 +13,8 @@ import {
 
 export interface PackagesPanelProps {
   packageJson: string;
+  /** Saves a new package.json; it is always valid JSON. */
+  onChange: (packageJson: string) => void;
 }
 
 /*
@@ -24,8 +22,10 @@ export interface PackagesPanelProps {
  * The preview installs them from npm when package.json changes; a download
  * installs them with `npm install`.
  */
-export default function PackagesPanel({ packageJson }: PackagesPanelProps) {
-  const { sandpack } = useSandpack();
+export default function PackagesPanel({
+  packageJson,
+  onChange,
+}: PackagesPanelProps) {
   const [draft, setDraft] = useState('');
   const [error, setError] = useState<string | null>(null);
   const id = useId();
@@ -36,7 +36,7 @@ export default function PackagesPanel({ packageJson }: PackagesPanelProps) {
       setError("package.json isn't valid JSON, so packages can't be changed.");
       return false;
     }
-    sandpack.updateFile(SANDBOX_PACKAGE_JSON, next);
+    onChange(next);
     return true;
   };
 

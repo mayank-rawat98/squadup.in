@@ -45,3 +45,8 @@ export interface CreateBoardInput {
   language: BoardLanguageId;
   seats: number;
 }
+
+/** How a room's React project starts: the template's files, or a copy of one of your sandboxes. */
+export type StartRoomSandboxInput =
+  | { files: Record<string, string> }
+  | { sandboxId: string };

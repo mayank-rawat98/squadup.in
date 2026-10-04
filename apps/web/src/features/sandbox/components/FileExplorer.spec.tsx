@@ -1,18 +1,6 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import FileExplorer from './FileExplorer';
 
-const sandpack = {
-  activeFile: '/src/App.tsx',
-  visibleFiles: ['/src/App.tsx'],
-  addFile: jest.fn(),
-  deleteFile: jest.fn(),
-  openFile: jest.fn(),
-};
-
-jest.mock('@codesandbox/sandpack-react', () => ({
-  useSandpack: () => ({ sandpack }),
-}));
-
 const FILES = {
   '/index.html': '<div id="root"></div>',
   '/package.json': '{}',
@@ -21,8 +9,18 @@ const FILES = {
   '/src/components/Card.tsx': 'card',
 };
 
+const project = {
+  files: FILES,
+  activeFile: '/src/App.tsx',
+  visibleFiles: ['/src/App.tsx'],
+  addFiles: jest.fn(),
+  deleteFile: jest.fn(),
+  openFile: jest.fn(),
+  updateFile: jest.fn(),
+};
+
 function setup() {
-  return render(<FileExplorer files={FILES} open onToggle={jest.fn()} />);
+  return render(<FileExplorer project={project} open onToggle={jest.fn()} />);
 }
 
 const row = (name: string) =>
@@ -69,13 +67,11 @@ describe('FileExplorer', () => {
     fireEvent.click(screen.getByRole('button', { name: 'New file' }));
     typeName(/new file in src\/components/, 'Button.tsx');
 
-    expect(sandpack.addFile).toHaveBeenCalledWith(
-      '/src/components/Button.tsx',
-      'export default function Button() {\n  return <div>Button</div>;\n}\n',
-    );
-    expect(sandpack.openFile).toHaveBeenCalledWith(
-      '/src/components/Button.tsx',
-    );
+    expect(project.addFiles).toHaveBeenCalledWith({
+      '/src/components/Button.tsx':
+        'export default function Button() {\n  return <div>Button</div>;\n}\n',
+    });
+    expect(project.openFile).toHaveBeenCalledWith('/src/components/Button.tsx');
   });
 
   it('makes a folder, then a file in it from its right-click menu', () => {
@@ -92,10 +88,9 @@ describe('FileExplorer', () => {
     fireEvent.click(within(menu).getByRole('menuitem', { name: 'New file…' }));
     typeName(/new file in src\/hooks/, 'use-todos.ts');
 
-    expect(sandpack.addFile).toHaveBeenCalledWith(
-      '/src/hooks/use-todos.ts',
-      '',
-    );
+    expect(project.addFiles).toHaveBeenCalledWith({
+      '/src/hooks/use-todos.ts': '',
+    });
   });
 
   it('shows what is wrong with a name and keeps the box open', () => {
@@ -108,7 +103,7 @@ describe('FileExplorer', () => {
     expect(screen.getByRole('alert').textContent).toBe(
       'App.tsx already exists here.',
     );
-    expect(sandpack.addFile).not.toHaveBeenCalled();
+    expect(project.addFiles).not.toHaveBeenCalled();
   });
 
   it('renames a folder by moving every file in it', () => {
@@ -118,12 +113,10 @@ describe('FileExplorer', () => {
     fireEvent.click(screen.getByRole('menuitem', { name: 'Rename…' }));
     typeName(/New name for components/, 'ui');
 
-    expect(sandpack.addFile).toHaveBeenCalledWith({
+    expect(project.addFiles).toHaveBeenCalledWith({
       '/src/ui/Card.tsx': 'card',
     });
-    expect(sandpack.deleteFile).toHaveBeenCalledWith(
-      '/src/components/Card.tsx',
-    );
+    expect(project.deleteFile).toHaveBeenCalledWith('/src/components/Card.tsx');
   });
 
   it('deletes a file after confirming, opening another if it was the only tab', () => {
@@ -132,8 +125,8 @@ describe('FileExplorer', () => {
     fireEvent.contextMenu(row('App.tsx'));
     fireEvent.click(screen.getByRole('menuitem', { name: 'Delete' }));
 
-    expect(sandpack.openFile).toHaveBeenCalledWith('/index.html');
-    expect(sandpack.deleteFile).toHaveBeenCalledWith('/src/App.tsx');
+    expect(project.openFile).toHaveBeenCalledWith('/index.html');
+    expect(project.deleteFile).toHaveBeenCalledWith('/src/App.tsx');
   });
 
   it("won't rename or delete a file the project needs, or a folder holding one", () => {
@@ -150,7 +143,7 @@ describe('FileExplorer', () => {
 
     fireEvent.contextMenu(row('src'));
     fireEvent.click(screen.getByRole('menuitem', { name: /Delete/ }));
-    expect(sandpack.deleteFile).not.toHaveBeenCalled();
+    expect(project.deleteFile).not.toHaveBeenCalled();
   });
 
   it('moves with the arrow keys and renames with F2', () => {

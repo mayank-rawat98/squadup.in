@@ -21,6 +21,11 @@ function whereabouts(peer: Peer | undefined): string {
   if (peer.view === 'board') {
     return peer.drawing ? 'Drawing on the whiteboard' : 'On the whiteboard';
   }
+  if (peer.view === 'sandbox') {
+    return peer.file
+      ? `In the React project, ${peer.file.slice(1)}`
+      : 'In the React project';
+  }
   return peer.line ? `On line ${peer.line}` : 'In the room';
 }
 

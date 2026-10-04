@@ -60,6 +60,20 @@ describe('roomMembers', () => {
     expect(host.status).toBe('Host · Drawing on the whiteboard');
   });
 
+  it('says which React project file someone has open', () => {
+    const [host, , kabir] = roomMembers(
+      members,
+      [
+        peer('host', 'Aarav Joshi', { view: 'sandbox', file: '/src/App.tsx' }),
+        peer('kabir', 'Kabir Mehta', { view: 'sandbox' }),
+      ],
+      'me',
+    );
+
+    expect(host.status).toBe('Host · In the React project, src/App.tsx');
+    expect(kabir.status).toBe('In the React project');
+  });
+
   it('gives each person a colour by join order', () => {
     const result = roomMembers(members, [], 'me');
     expect(result.map((m) => m.colour.bgClass)).toEqual([
