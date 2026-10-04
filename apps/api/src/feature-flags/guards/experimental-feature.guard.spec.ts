@@ -4,6 +4,7 @@ import { RequireExperimentalFeature } from '../../decorators/guards.decorator';
 import { ExperimentalFeatureGuard } from './experimental-feature.guard';
 
 const ARENA_BETA = 'ARENA_BETA';
+const SQUADS = 'SQUADS';
 
 class GatedControllerFixture {
   @RequireExperimentalFeature(ARENA_BETA)
@@ -12,6 +13,14 @@ class GatedControllerFixture {
   }
 
   ungated() {
+    return true;
+  }
+}
+
+@RequireExperimentalFeature(SQUADS)
+class GatedClassFixture {
+  @RequireExperimentalFeature(ARENA_BETA)
+  gated() {
     return true;
   }
 }
@@ -66,5 +75,26 @@ describe('ExperimentalFeatureGuard', () => {
       guard.canActivate(createExecutionContext({}, 'ungated')),
     ).resolves.toBe(true);
     expect(assertFeatureAccess).not.toHaveBeenCalled();
+  });
+
+  it('checks the flags on the route and on its controller', async () => {
+    const assertFeatureAccess = jest.fn().mockResolvedValue(undefined);
+    const guard = new ExperimentalFeatureGuard(new Reflector(), {
+      assertFeatureAccess,
+    } as never);
+    const context = {
+      getHandler: () => new GatedClassFixture().gated,
+      getClass: () => GatedClassFixture,
+      switchToHttp: () => ({
+        getRequest: () => ({ auth: { userId: 'user-1' } }),
+      }),
+    } as never;
+
+    await expect(guard.canActivate(context)).resolves.toBe(true);
+
+    expect(assertFeatureAccess.mock.calls).toEqual([
+      ['user-1', ARENA_BETA],
+      ['user-1', SQUADS],
+    ]);
   });
 });

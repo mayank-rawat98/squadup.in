@@ -1,4 +1,5 @@
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
+import { FEATURE_FLAGS } from '../feature-flags.constants';
 import { FeatureFlagsRepository } from '../repositories/feature-flags.repository';
 
 interface FeatureFlagSeed {
@@ -21,7 +22,31 @@ interface FeatureFlagSeed {
 @Injectable()
 export class FeatureFlagSeederService implements OnApplicationBootstrap {
   private readonly logger = new Logger(FeatureFlagSeederService.name);
-  private readonly flagsToSeed: ReadonlyArray<FeatureFlagSeed> = [];
+  /*
+   * New features start on but rolled out to nobody: ops opens them to
+   * chosen people or everyone from the console, and people can ask for
+   * access meanwhile.
+   */
+  private readonly flagsToSeed: ReadonlyArray<FeatureFlagSeed> = [
+    {
+      key: FEATURE_FLAGS.CODING_BOARD,
+      name: 'Coding board',
+      description:
+        'Rooms where a squad writes code together, sketches on a whiteboard and chats, live.',
+      enabled: true,
+      isExperimental: true,
+      rolloutToAll: false,
+    },
+    {
+      key: FEATURE_FLAGS.REACT_SANDBOX,
+      name: 'React sandbox',
+      description:
+        'React and TypeScript projects with a live preview, on your own or together inside a coding board room.',
+      enabled: true,
+      isExperimental: true,
+      rolloutToAll: false,
+    },
+  ];
 
   constructor(
     private readonly featureFlagsRepository: FeatureFlagsRepository,

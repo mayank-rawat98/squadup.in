@@ -8,6 +8,7 @@ import { AdminOpsBlogsService } from './blogs/admin-ops-blogs.service';
 import { AdminOpsEmailTemplatesController } from './email-templates/admin-ops-email-templates.controller';
 import { AdminOpsEmailTemplatesService } from './email-templates/admin-ops-email-templates.service';
 import { AdminOpsFeatureFlagsController } from './feature-flags/admin-ops-feature-flags.controller';
+import { AdminOpsFeatureFlagsService } from './feature-flags/admin-ops-feature-flags.service';
 import { AdminOpsFeatureRequestsController } from './feature-flags/admin-ops-feature-requests.controller';
 import { AdminOpsReferenceDataController } from './reference-data/admin-ops-reference-data.controller';
 import { AdminOpsSecurityController } from './security/admin-ops-security.controller';
@@ -40,6 +41,7 @@ import { AdminOpsUsersService } from './users/admin-ops-users.service';
     AdminOpsUsersService,
     AdminOpsBlogsService,
     AdminOpsEmailTemplatesService,
+    AdminOpsFeatureFlagsService,
   ],
 })
 export class AdminOpsModule {}

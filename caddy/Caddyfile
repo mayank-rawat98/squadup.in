@@ -55,14 +55,14 @@ www.{$WEB_DOMAIN} {
 	}
 }
 
-# MinIO files (public buckets such as blog images)
+# RustFS files (public buckets such as blog images)
 {$CDN_DOMAIN} {
 	request_body {
 		max_size 100MB
 	}
-	reverse_proxy minio:9000 {
+	reverse_proxy rustfs:9000 {
 		import proxied
-		# MinIO sets its own CORS header on some routes, and two
+		# RustFS sets its own CORS header on some routes, and two
 		# Access-Control-Allow-Origin headers are rejected as one malformed one.
 		header_down -Access-Control-Allow-Origin
 	}
@@ -71,9 +71,10 @@ www.{$WEB_DOMAIN} {
 	header Access-Control-Allow-Origin "*"
 }
 
-# MinIO console
+# RustFS console. It lives at /rustfs/console/; the bare `/` answers 403.
 {$MINIO_CONSOLE_DOMAIN} {
-	reverse_proxy minio:9001 {
+	redir / /rustfs/console/
+	reverse_proxy rustfs:9001 {
 		import proxied
 	}
 }

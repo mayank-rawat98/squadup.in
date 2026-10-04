@@ -26,6 +26,8 @@ import { EmailChangeController } from './auth/email-change.controller';
 import { BackupController } from './backup/backup.controller';
 import { BackupModule } from './backup/backup.module';
 import { BlogsModule } from './blogs/blogs.module';
+import { BoardsModule } from './boards/boards.module';
+import { BoardsController } from './boards/controllers/boards.controller';
 import { ChangelogController } from './changelog/changelog.controller';
 import { ChangelogModule } from './changelog/changelog.module';
 import { AuthMiddleware } from './common/middleware/auth.middleware';
@@ -44,6 +46,8 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { RateLimiterModule } from './rate-limiter/rate-limiter.module';
 import { RedisModule } from './redis/redis.module';
 import { ReferenceDataModule } from './reference-data/reference-data.module';
+import { SandboxesController } from './sandboxes/sandboxes.controller';
+import { SandboxesModule } from './sandboxes/sandboxes.module';
 import { SearchController } from './search/search.controller';
 import { SearchModule } from './search/search.module';
 import { GeneralSettingsController } from './settings/general-settings.controller';
@@ -117,6 +121,8 @@ import { UsersModule } from './users/users.module';
     ReferenceDataModule,
     SearchModule,
     BlogsModule,
+    BoardsModule,
+    SandboxesModule,
   ],
   controllers: [],
   providers: [],
@@ -172,6 +178,8 @@ export class AppModule implements NestModule {
         FeatureFlagsController,
         TourController,
         SearchController,
+        BoardsController,
+        SandboxesController,
       );
 
     // Staff realm — the ops dashboard authenticates with a staff token; there is

@@ -14,6 +14,9 @@ ADRs 0001–0005 were written after the fact, to record decisions the code had a
 | [0004](./0004-audit-pipeline.md)                     | Audit events go through RabbitMQ into MongoDB                      | accepted |
 | [0005](./0005-single-host-compose-caddy.md)          | One Docker Compose stack on one host, behind Caddy                 | accepted |
 | [0006](./0006-project-challenges-grade-snapshots.md) | Project challenges grade a submitted snapshot on a separate grader | proposed |
+| [0007](./0007-coding-board-yjs-rooms.md)             | The coding board syncs one Yjs document per room through the API   | accepted |
+| [0008](./0008-react-sandbox-sandpack.md)             | The React sandbox runs on Sandpack's bundler and saves projects    | accepted |
+| [0009](./0009-room-react-project-second-yjs-doc.md)  | A room's React project is a second Yjs document, behind flags      | accepted |
 
 ## Writing a new one
 

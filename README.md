@@ -37,7 +37,7 @@ SquadUp is in early development.
 | Operations console                                                                                  | Scaffolded |
 | Arenas and proctoring                                                                               | Planned    |
 | Solo challenges and leaderboards                                                                    | Planned    |
-| Coding board: editor, chat, voice, whiteboard, playground                                           | Planned    |
+| Coding board: rooms, shared editor, chat, whiteboard and a React sandbox (voice to come)            | Built      |
 | Rewards store                                                                                       | Planned    |
 
 What's being built next, and how, is in [ROADMAP.md](ROADMAP.md).
@@ -52,7 +52,7 @@ internal operations console, and the design system they share.
 | Monorepo       | [Nx](https://nx.dev), npm workspaces, TypeScript (strict)  |
 | API            | NestJS 11, TypeORM + PostgreSQL, Redis, Socket.IO          |
 | Audit pipeline | RabbitMQ → MongoDB                                         |
-| File storage   | MinIO (S3-compatible)                                      |
+| File storage   | RustFS (S3-compatible)                                     |
 | Frontend       | Next.js 16 (App Router), React 19, Tailwind CSS v4, Motion |
 | Auth           | JWT, passkeys (WebAuthn), TOTP 2FA, Google sign-in         |
 | Ops            | Docker Compose, Caddy, Prometheus, Grafana, GitHub Actions |
@@ -82,7 +82,7 @@ npm install
 # 1. Configure. The defaults work as-is for local development.
 cp .env.example .env.local
 
-# 2. Start Postgres, Redis, MongoDB, RabbitMQ and MinIO in the background
+# 2. Start Postgres, Redis, MongoDB, RabbitMQ and RustFS in the background
 #    (waits until they're healthy). Stop them with `npm run docker:down`.
 npm run docker:up
 
@@ -101,7 +101,7 @@ Then open:
 - Ops console: <http://localhost:3002>
 - API docs (Swagger): <http://localhost:8080/api/docs>, log in with
   `SWAGGER_USER` / `SWAGGER_PASSWORD`
-- RabbitMQ UI: <http://localhost:15672> · MinIO console: <http://localhost:9001>
+- RabbitMQ UI: <http://localhost:15672> · RustFS console: <http://localhost:9001/rustfs/console/>
 
 Email, Google sign-in, SMS 2FA and IP lookup call third-party services. Their
 keys are optional in `.env.example`; only those features fail without them.

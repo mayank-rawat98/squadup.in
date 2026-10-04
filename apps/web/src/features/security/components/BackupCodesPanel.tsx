@@ -2,12 +2,17 @@
 
 import { useId, useState } from 'react';
 import { Download } from 'lucide-react';
-import { Alert, Button, Checkbox, Typography } from '@squadup.in/ui';
+import {
+  Alert,
+  Button,
+  Checkbox,
+  CopyButton,
+  Typography,
+} from '@squadup.in/ui';
 import {
   BACKUP_CODES_FILE_NAME,
   backupCodesFileContents,
 } from '../utils/backup-codes';
-import CopyButton from './CopyButton';
 
 /*
  * The only time the plain codes exist outside the API's hash. They are shown

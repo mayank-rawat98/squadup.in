@@ -1,9 +1,19 @@
 import { render, screen } from '@testing-library/react';
 import { useCurrentUser, type CurrentUser } from '@/features/auth';
+import { useFeature } from '@/features/feature-flags';
 import DashboardHome from './DashboardHome';
 
 jest.mock('@/features/auth', () => ({ useCurrentUser: jest.fn() }));
+// The rooms section loads its own data; it has its own spec.
+jest.mock('@/features/board', () => ({
+  RecentRooms: () => <section aria-label="Your rooms" />,
+}));
+jest.mock('@/features/feature-flags', () => ({
+  FEATURE_FLAGS: { codingBoard: 'codingBoard' },
+  useFeature: jest.fn(() => ({ status: 'on', retry: jest.fn() })),
+}));
 const useCurrentUserMock = jest.mocked(useCurrentUser);
+const useFeatureMock = jest.mocked(useFeature);
 
 const USER: CurrentUser = {
   id: 'u1',
@@ -51,6 +61,21 @@ describe('DashboardHome', () => {
     expect(
       screen.getByRole('link', { name: /Edit profile/ }).getAttribute('href'),
     ).toBe('/settings/profile');
+  });
+
+  it('shows your coding board rooms', () => {
+    withUser({});
+    render(<DashboardHome />);
+
+    expect(screen.getByRole('region', { name: 'Your rooms' })).toBeTruthy();
+  });
+
+  it('leaves the rooms out for someone the coding board does not reach', () => {
+    useFeatureMock.mockReturnValueOnce({ status: 'off', retry: jest.fn() });
+    withUser({});
+    render(<DashboardHome />);
+
+    expect(screen.queryByRole('region', { name: 'Your rooms' })).toBeNull();
   });
 
   it('shows stats as not available rather than as numbers', () => {

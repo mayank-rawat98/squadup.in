@@ -83,3 +83,51 @@ describe('OtpInput', () => {
     expect(input.getAttribute('autocomplete')).toBe('one-time-code');
   });
 });
+
+describe('OtpInput with letters', () => {
+  function ControlledCode({
+    onComplete,
+  }: {
+    onComplete?: (code: string) => void;
+  }) {
+    const [value, setValue] = useState('');
+    return (
+      <OtpInput
+        aria-label="Room ID"
+        charset="alphanumeric"
+        length={5}
+        value={value}
+        onChange={setValue}
+        onComplete={onComplete}
+      />
+    );
+  }
+
+  it('accepts letters and digits and upper-cases them', () => {
+    const onComplete = jest.fn();
+    render(<ControlledCode onComplete={onComplete} />);
+    const input = screen.getByLabelText('Room ID');
+
+    paste(input, 'k7q 2m');
+
+    expect(input).toHaveProperty('value', 'K7Q2M');
+    expect(onComplete).toHaveBeenCalledWith('K7Q2M');
+  });
+
+  it('asks for the normal keyboard, not the keypad or SMS autofill', () => {
+    render(<ControlledCode />);
+    const input = screen.getByLabelText('Room ID');
+
+    expect(input.getAttribute('inputmode')).toBe('text');
+    expect(input.getAttribute('autocomplete')).toBe('off');
+  });
+
+  it('still rejects symbols', () => {
+    render(<ControlledCode />);
+    const input = screen.getByLabelText('Room ID');
+
+    paste(input, 'K7Q#M');
+
+    expect(input).toHaveProperty('value', '');
+  });
+});

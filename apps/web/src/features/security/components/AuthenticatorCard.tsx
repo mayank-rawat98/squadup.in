@@ -6,6 +6,7 @@ import { Smartphone } from 'lucide-react';
 import {
   Alert,
   Button,
+  CopyButton,
   FormField,
   Input,
   OtpInput,
@@ -30,7 +31,6 @@ import {
 import { useRefreshCurrentUser } from '../hooks/use-refresh-current-user';
 import { formatSecret } from '../utils/backup-codes';
 import BackupCodesPanel from './BackupCodesPanel';
-import CopyButton from './CopyButton';
 import TwoFactorMethodCard from './TwoFactorMethodCard';
 
 /*
