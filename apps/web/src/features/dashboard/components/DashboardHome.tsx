@@ -12,6 +12,7 @@ import {
 } from '@squadup.in/ui';
 import { useCurrentUser, type CurrentUser } from '@/features/auth';
 import { RecentRooms } from '@/features/board';
+import { FEATURE_FLAGS, useFeature } from '@/features/feature-flags';
 import {
   COMING_UP,
   DASHBOARD_STATS,
@@ -26,6 +27,7 @@ import { firstNameOf, isProfileIncomplete } from '../utils/first-name';
  */
 export default function DashboardHome() {
   const { data: user, isPending, isError, refetch } = useCurrentUser();
+  const board = useFeature(FEATURE_FLAGS.codingBoard);
 
   if (isPending) return <DashboardSkeleton />;
 
@@ -51,7 +53,7 @@ export default function DashboardHome() {
       <Greeting user={user} />
       {isProfileIncomplete(user) && <ProfilePrompt user={user} />}
       <Stats />
-      <RecentRooms />
+      {board.status === 'on' ? <RecentRooms /> : null}
       <div className="grid gap-10 lg:grid-cols-5">
         <section aria-labelledby="activity-heading" className="lg:col-span-3">
           <Typography

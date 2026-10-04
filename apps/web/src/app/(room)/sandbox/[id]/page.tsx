@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { FEATURE_FLAGS, FeatureGate } from '@/features/feature-flags';
 import { SandboxWorkspace } from '@/features/sandbox';
 
 export const metadata: Metadata = {
@@ -11,5 +12,9 @@ export default async function SandboxWorkspacePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  return <SandboxWorkspace id={id} />;
+  return (
+    <FeatureGate feature={FEATURE_FLAGS.reactSandbox} fullScreen>
+      <SandboxWorkspace id={id} />
+    </FeatureGate>
+  );
 }
