@@ -436,7 +436,11 @@ voice transport (WebRTC mesh for small rooms, or an SFU such as LiveKit).
   rectangles, arrows and an eraser, pages (each person picks the page they
   look at), and saving a page as a PNG (✅). Text on the board is still to
   come.
-- ⬜ React + TypeScript playground with a live preview in a sandboxed iframe.
+- ✅ React + TypeScript sandbox ([ADR-0008](docs/adr/0008-react-sandbox-sandpack.md)):
+  `/sandbox`, projects saved to the account from a Vite-style scaffold, a
+  live preview that hot-reloads on Sandpack's bundler, files, npm packages,
+  a console, the preview in its own tab, and download as a zip. Still to
+  come: sharing and forking a sandbox, and opening one inside a board room.
 - ⬜ Code execution by reusing the Milestone 3 runner.
 
 ---
