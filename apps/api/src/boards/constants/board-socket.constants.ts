@@ -18,7 +18,26 @@ export const BOARD_SOCKET_EVENTS = {
   CHAT_MESSAGE: 'chat:message',
   /** server → room: the room reached its retention limit and was deleted. */
   EXPIRED: 'board:expired',
+  /**
+   * client → server, ack: the room's React project and everyone's presence
+   * in it, or `ready: false` when nobody has started it yet.
+   */
+  SANDBOX_OPEN: 'sandbox:open',
+  SANDBOX_LEAVE: 'sandbox:leave',
+  /** both ways: a Yjs update to the room's React project. */
+  SANDBOX_UPDATE: 'sandbox:update',
+  /** both ways: presence in the project (open file, cursors). */
+  SANDBOX_AWARENESS: 'sandbox:awareness',
+  /** server → room: someone started the project; open it to join in. */
+  SANDBOX_READY: 'sandbox:ready',
 } as const;
+
+/**
+ * The two shared documents a room can have: `code` (the editor files and
+ * the whiteboard) and `sandbox` (the React project). Each syncs on its own
+ * events and is stored in its own table.
+ */
+export type BoardDocKind = 'code' | 'sandbox';
 
 /*
  * The shared Yjs document's layout, which the web app reads and writes too:
@@ -37,6 +56,14 @@ export const BOARD_DOC_META_LANGUAGE = 'language';
 export const boardDocCodeKey = (language: BoardLanguage) => `code:${language}`;
 export const BOARD_DOC_PAGES = 'pages';
 export const BOARD_DOC_FIRST_PAGE_ID = 'main';
+
+/*
+ * The React project's document, which the web app reads and writes too:
+ * - `files` (Y.Map): absolute path (`/src/App.tsx`) to that file's Y.Text
+ *
+ * Which file each person has open is presence, not shared state.
+ */
+export const BOARD_SANDBOX_DOC_FILES = 'files';
 
 /** What a new room's files start with, so nobody opens a blank page. */
 export const BOARD_STARTER_CODE: Record<BoardLanguage, string> = {
